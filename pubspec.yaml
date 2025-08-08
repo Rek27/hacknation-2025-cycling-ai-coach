@@ -1,0 +1,63 @@
+name: hackathon
+description: A starting point for Dart libraries or applications.
+version: 1.0.0
+# repository: https://github.com/my_org/my_repo
+
+environment:
+  sdk: '>=3.2.3 <4.0.0'
+
+
+# Add regular dependencies here.
+dependencies:
+  auto_route: ^10.1.0
+  calendar_date_picker2: ^2.0.1
+
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
+  cupertino_icons: ^1.0.8
+
+  dots_indicator: ^4.0.1
+  dropdown_button2: ^2.3.9
+  dropdown_search: ^6.0.1
+
+  flutter:
+    sdk: flutter
+
+  flutter_image_compress: ^2.4.0
+  flutter_launcher_icons: ^0.14.4
+  flutter_map: ^8.1.1
+  flutter_native_splash: ^2.4.6
+  flutter_speed_dial: ^7.0.0
+  flutter_svg: ^2.2.0
+
+  font_awesome_flutter: ^10.8.0
+  get_it: ^8.0.2
+  http: ^1.4.0
+  image_picker: ^1.1.2
+  intl: any
+  latlong2: any
+  mobile_scanner: ^7.0.1
+  multi_dropdown: ^3.0.1
+  permission_handler: ^12.0.1
+  provider: ^6.1.5
+  qr_flutter: ^4.1.0
+  share_plus: ^11.0.0
+  shimmer: ^3.0.0
+  supabase_flutter: ^2.9.1
+  super_tooltip: ^2.1.0
+  url_launcher: ^6.3.2
+  very_good_infinite_list: ^0.9.0
+
+dev_dependencies:
+  auto_route_generator: ^10.2.3
+  build_runner: ^2.5.4
+  flutter_lints: ^6.0.0
+
+  flutter_test:
+    sdk: flutter
+
+  test: ^1.25.15
+
+
+flutter:
+  uses-material-design: true
