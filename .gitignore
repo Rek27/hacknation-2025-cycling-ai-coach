@@ -1,10 +1,56 @@
-# https://dart.dev/guides/libraries/private-files
-# Created by `dart pub`
+#flutter specific
+.flutter-plugins
+.flutter-plugins-dependencies
+.DS_Store
 .dart_tool/
-
-# Avoid committing pubspec.lock for library packages; see
-# https://dart.dev/guides/libraries/private-files#pubspeclock.
+.packages
+.pub/
+build/
+.git/
+.idea/
 pubspec.lock
+doc/api/
 
-# Project exclude paths
-/build/
+#ios specific
+ios/.generated/
+ios/Runner.xcworkspace/contents.xcworkspacedata
+
+#android specific
+android/key.properties
+
+# User-specific
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+.idea/**/shelf
+
+# Generated files
+.idea/**/contentModel.xml
+
+# Sensitive or high-churn files
+.idea/**/dataSources/
+.idea/**/dataSources.ids
+.idea/**/dataSources.local.xml
+.idea/**/sqlDataSources.xml
+.idea/**/dynamic.xml
+.idea/**/uiDesigner.xml
+.idea/**/dbnavigator.xml
+
+# Gradle
+.idea/**/gradle.xml
+.idea/**/libraries
+
+# Gradle and Maven with auto-import
+.idea/modules.xml
+.idea/*.iml
+.idea/modules
+*.iml
+
+# File-based project format
+*.iws
+
+# IntelliJ
+out/
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/Generated.xcconfig
