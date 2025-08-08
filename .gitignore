@@ -54,3 +54,7 @@ android/key.properties
 out/
 ios/Flutter/flutter_export_environment.sh
 ios/Flutter/Generated.xcconfig
+
+# Python
+python_backend/.venv
+*.pyc
