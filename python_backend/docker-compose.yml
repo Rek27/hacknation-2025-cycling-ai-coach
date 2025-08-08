@@ -1,0 +1,19 @@
+version: '1'
+
+services:
+  teamplate_project:
+    build:
+      context: .
+    ports:
+      - "8001:8001"
+    networks:
+      - template_project_network
+    volumes:
+      - ./:/app:delegated
+      - /app/.venv
+    environment:
+      - ENV=development
+
+networks:
+  template_project_network:
+    driver: bridge

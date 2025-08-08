@@ -1,0 +1,22 @@
+[project]
+name = "test-project"
+version = "0.1.0"
+description = "Test project"
+readme = "README.md"
+requires-python = ">=3.11,<4"
+dependencies = [
+    "fastapi==0.111.1",
+    "openai==1.97.0",
+    "uvicorn==0.30.5",
+    "python-dotenv==1.0.0",
+    "pydantic==2.11.1"
+]
+
+[dependency-groups]
+dev = [
+    "openapi-python-client>=0.25.0",
+    "pytest>=8.4.0",
+    "pytest-asyncio>=1.0.0",
+    "pytest-cov>=6.2.0"
+]
+
