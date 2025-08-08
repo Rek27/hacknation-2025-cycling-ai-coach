@@ -58,3 +58,4 @@ ios/Flutter/Generated.xcconfig
 # Python
 python_backend/.venv
 *.pyc
+*/.env
