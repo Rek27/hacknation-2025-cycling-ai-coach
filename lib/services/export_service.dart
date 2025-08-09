@@ -10,7 +10,12 @@ class ExportService {
   static final ExportService instance = ExportService._internal();
 
   Future<void> shareFile(File file) async {
-    await Share.shareXFiles([XFile(file.path)]);
+    await SharePlus.instance.share(
+      ShareParams(
+        text: 'Cycling data export',
+        files: [XFile(file.path)],
+      ),
+    );
   }
 
   Future<File> exportCyclingCsv({
