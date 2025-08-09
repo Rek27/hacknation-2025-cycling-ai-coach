@@ -1,0 +1,24 @@
+---
+globs: lib/**/*.dart
+alwaysApply: false
+---
+## Flutter/Dart (Frontend)
+
+- **Purpose**: Client UI built with Flutter. Communicates with the backend via HTTP and with Supabase for auth and database access.
+- **Entry point**: [lib/main.dart](/lib/main.dart)
+- **Folder layout**: Place feature code under `lib/src/`.
+
+### Integrations
+- **Backend API (FastAPI)**
+  - Local base URL during development: `http://localhost:8001`
+  - Prefer creating a lightweight API client or helpers under `lib/src/`.
+
+- **Supabase (Auth + PostgreSQL)**
+  - Use Supabase Flutter SDK for sign-in/out and session handling.
+  - All PostgreSQL access must go through deployed SQL functions (RPC). Do not query tables directly from the client.
+  - SQL functions live in [`database_functions/`](/database_functions/)
+
+### Notes
+- Propagate auth context when calling the backend if endpoints require authentication.
+- Keep UI logic and network/data logic separated for maintainability.
+
