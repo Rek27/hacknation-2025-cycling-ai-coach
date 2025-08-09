@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY pyproject.toml uv.lock main.py ./
 
-RUN uv sync --locked
+RUN uv sync
 
 COPY src ./src
 ENV PATH="/app/.venv/bin:$PATH" 

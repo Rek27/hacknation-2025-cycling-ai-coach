@@ -11,8 +11,6 @@ void main() async {
 
   await SupabaseManager.initialize();
 
-  print(await TestDto.testFunction(testId: 1));
-
   runApp(MyApp());
 }
 

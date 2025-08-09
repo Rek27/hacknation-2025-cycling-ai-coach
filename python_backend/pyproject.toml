@@ -9,8 +9,16 @@ dependencies = [
     "openai==1.97.0",
     "uvicorn==0.30.5",
     "python-dotenv==1.0.0",
-    "pydantic==2.11.1"
+    "pydantic==2.11.1",
+    "supabase==2.7.4",
+    "requests==2.32.3",
+    "mcp>=0.3.0",
+    "anyio>=4.4.0",
+    "elevenlabs",
 ]
+
+[project.scripts]
+cycling-mcp = "src.mcp_stdio:main"
 
 [dependency-groups]
 dev = [

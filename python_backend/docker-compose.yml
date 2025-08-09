@@ -1,19 +1,21 @@
-version: '1'
+version: '3.8'
 
 services:
-  teamplate_project:
+  python_backend:
     build:
       context: .
     ports:
       - "8001:8001"
     networks:
-      - template_project_network
+      - backend_network
     volumes:
       - ./:/app:delegated
       - /app/.venv
     environment:
       - ENV=development
+    env_file:
+      - ../.env
 
 networks:
-  template_project_network:
+  backend_network:
     driver: bridge
