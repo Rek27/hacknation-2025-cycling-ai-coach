@@ -3,6 +3,7 @@ from typing import Optional, Dict, Any, List, Iterable
 from datetime import datetime, timezone, timedelta
 import os
 import math
+from uuid import UUID
 
 try:
     from supabase import create_client
@@ -34,12 +35,21 @@ def _fetch_activities(
     limit: int = 5000,
     offset: int = 0,
 ) -> List[CyclingActivity]:
+    # Ensure p_user_id is a UUID (or null) for the SQL function
+    p_user_uuid: Optional[str] = None
+    # Allow empty/missing userId to mean "all users"
+    if user_id is not None and user_id != "":
+        try:
+            p_user_uuid = str(UUID(user_id))
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid userId; must be a UUID")
+        
     res = client.rpc(
         "load_cycling_activities",
         {
             "p_start_date_iso": start_date_iso,
             "p_end_date_iso": end_date_iso,
-            "p_user_id": user_id,
+            "p_user_id": p_user_uuid,
             "p_limit": limit,
             "p_offset": offset,
         },

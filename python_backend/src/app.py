@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from src.api.routers import health, activities
+from src.api.routers import health
 from src.api.routers import stats
 from mcp.server.fastmcp import FastMCP
 from src.api.routers.mcp_server import register_tools
@@ -8,7 +8,6 @@ from src.api.routers.mcp_server import register_tools
 def app() -> FastAPI:
     project = FastAPI(title="Temp", version="1.0.0")
     project.include_router(health.router)
-    project.include_router(activities.router)
     project.include_router(stats.router)
 
     # Register MCP tools and mount the MCP HTTP app (exposes OpenAPI) at /mcp.
