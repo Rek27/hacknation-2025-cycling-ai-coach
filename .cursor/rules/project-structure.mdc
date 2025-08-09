@@ -1,0 +1,26 @@
+---
+alwaysApply: true
+---
+## Project structure overview
+
+- **Frontend (Flutter/Dart)**: Lives under `lib/` and related Flutter project files. The app is the client UI and talks to the backend via HTTP APIs.
+  - Entry point: [lib/main.dart](/lib/main.dart)
+
+- **Backend (Python / FastAPI)**: Lives in [`python_backend/`](/python_backend/). It is containerized with Docker and exposed locally on port **8001** during development.
+  - Container setup: [`python_backend/Dockerfile`](/python_backend/Dockerfile)
+  - Orchestration: [`python_backend/docker-compose.yml`](/python_backend/docker-compose.yml)
+  - Python dependencies & toolchain managed by `uv`: [`python_backend/pyproject.toml`](/python_backend/pyproject.toml)
+  - App entry point for local runs: [`python_backend/main.py`](/python_backend/main.py)
+  - FastAPI app factory and routers: [`python_backend/src/app.py`](/python_backend/src/app.py), routers under [`python_backend/src/api/routers/`](/python_backend/src/api/routers/)
+    - Example health route: [`python_backend/src/api/routers/health.py`](/python_backend/src/api/routers/health.py)
+  - Local base URL during development: `http://localhost:8001`
+
+- **Supabase (PostgreSQL + Auth)**: Used directly from the Flutter/Dart app.
+  - All PostgreSQL access must go through SQL functions that are authored and deployed to Supabase.
+  - Those SQL functions live in [`database_functions/`](/database_functions/)
+    - Example: [`database_functions/test.sql`](/database_functions/test.sql)
+  - Supabase is also the authentication provider. The Flutter app uses the Supabase SDK for sign-in/out and session handling.
+
+### Data flow at a glance
+- Flutter/Dart UI → calls FastAPI endpoints at `http://localhost:8001` (locally) for server-driven features.
+- Flutter/Dart UI → calls Supabase (cloud) for authentication and for database access via deployed SQL functions.

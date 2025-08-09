@@ -1,0 +1,17 @@
+---
+globs: database_functions/**/*.sql
+---
+## Supabase SQL Functions
+
+- **Location**: [`database_functions/`](/database_functions/)
+- **Purpose**: All PostgreSQL access from the Flutter app must go through SQL functions (RPC) deployed to Supabase. Avoid direct table access from the client.
+- **Authentication**: Supabase handles auth. Use the Supabase Flutter SDK in the client and pass the user's session/token when invoking RPCs.
+
+### Conventions
+- Use clear, versionable function names and stable signatures.
+- Return typed columns for predictable client parsing.
+- Keep business logic in functions; keep them idempotent where possible.
+
+### Example
+- [`database_functions/test.sql`](/database_functions/test.sql)
+

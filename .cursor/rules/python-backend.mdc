@@ -1,0 +1,23 @@
+---
+globs: python_backend/**
+---
+## Python Backend (FastAPI)
+
+- **Location**: [`python_backend/`](/python_backend/)
+- **Runtime/tooling**: Python 3.11, managed with `uv` (see [`pyproject.toml`](/python_backend/pyproject.toml) and `uv.lock`).
+- **Local URL**: `http://localhost:8001`
+- **Entrypoint (local run)**: [`python_backend/main.py`](/python_backend/main.py)
+- **App module**: [`python_backend/src/app.py`](/python_backend/src/app.py)
+- **Routers**: [`python_backend/src/api/routers/`](/python_backend/src/api/routers/)
+  - Example: [`python_backend/src/api/routers/health.py`](/python_backend/src/api/routers/health.py)
+
+### Containerization
+- **Dockerfile**: [`python_backend/Dockerfile`](/python_backend/Dockerfile)
+- **Compose**: [`python_backend/docker-compose.yml`](/python_backend/docker-compose.yml)
+- Exposed port: 8001
+
+### Guidelines
+- Keep request/response models using Pydantic (v2) where applicable.
+- Add new features as separate routers under `src/api/routers/` and include them in `src/app.py`.
+- Prefer dependency injection for shared services (DB clients, auth, etc.).
+
