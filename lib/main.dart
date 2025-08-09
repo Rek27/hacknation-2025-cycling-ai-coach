@@ -5,6 +5,8 @@ import 'package:hackathon/view/home/home_controller.dart';
 import 'package:hackathon/view/home/home_view.dart';
 import 'package:provider/provider.dart';
 import 'package:hackathon/dto/test_dto.dart';
+import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
+import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,6 +14,12 @@ void main() async {
   await SupabaseManager.initialize();
 
   print(await TestDto.testFunction(testId: 1));
+
+  // Ensure a platform implementation for webview_flutter on iOS
+  if (WebViewPlatform.instance == null ||
+      WebViewPlatform.instance is! WebKitWebViewPlatform) {
+    WebViewPlatform.instance = WebKitWebViewPlatform();
+  }
 
   runApp(MyApp());
 }

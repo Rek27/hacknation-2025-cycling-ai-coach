@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:hackathon/themes/app_constants.dart';
+import 'package:hackathon/view/home/widgets/distance_line_chart.dart';
+import 'package:hackathon/view/home/widgets/energy_bar_chart.dart';
+import 'package:hackathon/view/home/widgets/heart_rate_line_chart.dart';
+import 'package:hackathon/view/home/widgets/speed_line_chart.dart';
+import 'package:hackathon/view/home/widgets/summary_cards.dart';
 import 'package:provider/provider.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:hackathon/view/home/home_controller.dart';
+import 'package:hackathon/view/home/ai_chat.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -13,46 +17,14 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-  final TextEditingController _chatController = TextEditingController();
-  late final stt.SpeechToText _speech;
-  bool _listening = false;
-
   @override
   void initState() {
     super.initState();
-    _speech = stt.SpeechToText();
-  }
-
-  Future<void> _toggleListening() async {
-    if (_listening) {
-      await _speech.stop();
-      setState(() => _listening = false);
-      return;
-    }
-    final bool available = await _speech.initialize();
-    if (!available) return;
-    setState(() => _listening = true);
-    await _speech.listen(onResult: (res) {
-      setState(() {
-        _chatController.text = res.recognizedWords;
-        _chatController.selection = TextSelection.fromPosition(
-          TextPosition(offset: _chatController.text.length),
-        );
-      });
-    });
-  }
-
-  Future<void> _pickFiles() async {
-    await FilePicker.platform.pickFiles(
-        allowMultiple: false,
-        withData: false,
-        type: FileType.custom,
-        allowedExtensions: ['jpg', 'png', 'mp4', 'mov']);
   }
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<HomeController>();
+    final controller = Provider.of<HomeController>(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Cycling Coach'),
@@ -67,57 +39,30 @@ class _HomeViewState extends State<HomeView> {
             tooltip: 'Export CSV',
             onPressed: () => controller.exportCyclingCsvAndShare(),
           ),
-          IconButton(
-            icon: const Icon(Icons.bolt),
-            tooltip: 'Load mock data',
-            onPressed: () => controller.loadMockCyclingData(count: 24),
-          ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(Spacings.m),
-              children: const [
-                // Placeholder for chat messages
-                SizedBox.shrink(),
-              ],
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(Spacings.m),
+          children: [
+            SummaryCards(activities: controller.last90DayCycling),
+            SizedBox(height: Spacings.m),
+            DistanceLineChart(activities: controller.last90DayCycling),
+            SizedBox(height: Spacings.m),
+            SpeedLineChart(activities: controller.last90DayCycling),
+            SizedBox(height: Spacings.m),
+            EnergyBarChart(
+              activities: controller.last90DayCycling,
+              sampleEvery: 2,
             ),
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.attach_file),
-                    onPressed: _pickFiles,
-                  ),
-                  Expanded(
-                    child: TextField(
-                      controller: _chatController,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) {
-                        // TODO: send message
-                      },
-                      decoration: const InputDecoration(
-                        hintText: 'Type a message...',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: Spacings.s),
-                  IconButton(
-                    icon: Icon(_listening ? Icons.mic : Icons.mic_none),
-                    onPressed: _toggleListening,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+            SizedBox(height: Spacings.m),
+            HeartRateLineChart(activities: controller.last90DayCycling),
+          ],
+        ),
+      ),
+      floatingActionButton: SizedBox(
+        height: 450,
+        child: AIChat(),
       ),
     );
   }

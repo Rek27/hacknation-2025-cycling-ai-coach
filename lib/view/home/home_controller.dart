@@ -5,8 +5,11 @@ import 'package:hackathon/services/export_service.dart';
 import 'package:hackathon/model/mock_cycling_data.dart';
 
 class HomeController extends ChangeNotifier {
-  List<int> last7DaySteps = List<int>.filled(7, 0);
   List<CyclingActivity> last90DayCycling = <CyclingActivity>[];
+
+  HomeController() {
+    loadMockCyclingData(count: 24);
+  }
 
   Future<void> syncFromHealth() async {
     final bool granted = await HealthService.instance.requestPermissions(
@@ -14,7 +17,6 @@ class HomeController extends ChangeNotifier {
     );
     if (!granted) return;
 
-    last7DaySteps = await HealthService.instance.fetchStepsPerDay(days: 7);
     last90DayCycling =
         await HealthService.instance.fetchCyclingActivitiesLast90Days();
 
