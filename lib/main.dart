@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:hackathon/src/service/supabase_manager.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:hackathon/src/themes/app_themes.dart';
+import 'package:hackathon/src/view/home/home_controller.dart';
+import 'package:hackathon/src/view/home/home_view.dart';
+import 'package:provider/provider.dart';
 import 'package:hackathon/src/dto/test_dto.dart';
-
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,15 +21,18 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Show something simple for now
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Template Project',
-      theme: ThemeData.light(),
-      darkTheme: ThemeData.dark(),
-      home: Scaffold(
-        appBar: AppBar(title: Text('Template Project')),
-        body: Center(child: Text('Welcome to the Template Project!')),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => HomeController()),
+        // Add future controllers here
+      ],
+      child: MaterialApp(
+        title: 'Hackathon',
+        theme: AppThemes.light,
+        darkTheme: AppThemes.dark,
+        highContrastTheme: AppThemes.lightHighContrast,
+        highContrastDarkTheme: AppThemes.darkHighContrast,
+        home: const HomeView(),
       ),
     );
   }
