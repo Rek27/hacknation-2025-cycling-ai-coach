@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:hackathon/src/themes/app_constants.dart';
+import 'package:hackathon/themes/app_constants.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
-import 'package:hackathon/src/view/home/home_controller.dart';
+import 'package:hackathon/view/home/home_controller.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hackathon/src/themes/app_constants.dart';
+import 'package:hackathon/themes/app_constants.dart';
 
 /// Provides predefined themes for various widgets in the application.
 class AppWidgetThemes {

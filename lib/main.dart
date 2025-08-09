@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:hackathon/src/service/supabase_manager.dart';
-import 'package:hackathon/src/themes/app_themes.dart';
-import 'package:hackathon/src/view/home/home_controller.dart';
-import 'package:hackathon/src/view/home/home_view.dart';
+import 'package:hackathon/services/supabase_manager.dart';
+import 'package:hackathon/themes/app_themes.dart';
+import 'package:hackathon/view/home/home_controller.dart';
+import 'package:hackathon/view/home/home_view.dart';
 import 'package:provider/provider.dart';
-import 'package:hackathon/src/dto/test_dto.dart';
+import 'package:hackathon/dto/test_dto.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import 'package:hackathon/src/model/cycling_activity.dart';
+import 'package:hackathon/model/cycling_activity.dart';
 
 List<CyclingActivity> generateMockCyclingActivities({
   int count = 20,

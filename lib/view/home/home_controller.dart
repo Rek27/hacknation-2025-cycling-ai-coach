@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:hackathon/src/service/health_service.dart';
-import 'package:hackathon/src/model/cycling_activity.dart';
-import 'package:hackathon/src/service/export_service.dart';
-import 'package:hackathon/src/model/mock_cycling_data.dart';
+import 'package:hackathon/services/health_service.dart';
+import 'package:hackathon/model/cycling_activity.dart';
+import 'package:hackathon/services/export_service.dart';
+import 'package:hackathon/model/mock_cycling_data.dart';
 
 class HomeController extends ChangeNotifier {
   List<int> last7DaySteps = List<int>.filled(7, 0);

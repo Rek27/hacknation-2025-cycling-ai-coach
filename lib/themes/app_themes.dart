@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:hackathon/src/themes/app_colors.dart';
-import 'package:hackathon/src/themes/app_fonts.dart';
-import 'package:hackathon/src/themes/app_widget_themes.dart';
+import 'package:hackathon/themes/app_colors.dart';
+import 'package:hackathon/themes/app_fonts.dart';
+import 'package:hackathon/themes/app_widget_themes.dart';
 
 /// Holds the main themes of the app.
 class AppThemes {

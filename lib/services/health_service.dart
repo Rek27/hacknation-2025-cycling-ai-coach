@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:health/health.dart';
-import 'package:hackathon/src/model/cycling_activity.dart';
+import 'package:hackathon/model/cycling_activity.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class HealthService {
