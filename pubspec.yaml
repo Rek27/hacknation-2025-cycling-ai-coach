@@ -23,12 +23,14 @@ dependencies:
   flutter:
     sdk: flutter
 
+  flutter_dotenv: ^5.2.1
   flutter_image_compress: ^2.4.0
   flutter_launcher_icons: ^0.14.4
   flutter_map: ^8.1.1
   flutter_native_splash: ^2.4.6
   flutter_speed_dial: ^7.0.0
   flutter_svg: ^2.2.0
+
 
   font_awesome_flutter: ^10.8.0
   get_it: ^8.0.2
@@ -61,3 +63,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - .env

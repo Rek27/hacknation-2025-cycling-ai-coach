@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:hackathon/src/service/supabase_manager.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:hackathon/src/dto/test_dto.dart';
 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await SupabaseManager.initialize();
+
+  print(await TestDto.testFunction(testId: 1));
 
   runApp(MyApp());
 }
