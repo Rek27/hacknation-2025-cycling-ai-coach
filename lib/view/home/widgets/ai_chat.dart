@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
@@ -12,7 +13,7 @@ class AIChat extends StatefulWidget {
 
 class _AIChatState extends State<AIChat> {
   late final WebViewController _controller;
-  bool _loaded = false;
+  HttpServer? _server;
 
   @override
   void initState() {
@@ -31,8 +32,15 @@ class _AIChatState extends State<AIChat> {
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.transparent);
 
-    // Initial HTML will be loaded in build with the themed background color.
     _controller = controller;
+
+    // Start local server and load the hosted HTML over a secure (localhost) origin
+    () async {
+      final uri = await _startLocalServer();
+      if (!mounted) return;
+      await _controller.loadRequest(uri);
+      if (mounted) setState(() {});
+    }();
   }
 
   Future<void> _ensureMicPermission() async {
@@ -49,12 +57,29 @@ class _AIChatState extends State<AIChat> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_loaded) {
-      _controller.loadHtmlString(_buildHtml());
-      _loaded = true;
-    }
-
     return WebViewWidget(controller: _controller);
+  }
+
+  Future<Uri> _startLocalServer() async {
+    _server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final int port = _server!.port;
+    print('server started on port $port');
+
+    () async {
+      await for (final HttpRequest request in _server!) {
+        request.response.headers.contentType = ContentType.html;
+        request.response.write(_buildHtml());
+        await request.response.close();
+      }
+    }();
+
+    return Uri.parse('http://127.0.0.1:$port/');
+  }
+
+  @override
+  void dispose() {
+    _server?.close(force: true);
+    super.dispose();
   }
 
   String _buildHtml() {
