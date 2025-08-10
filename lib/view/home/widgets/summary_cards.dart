@@ -18,6 +18,16 @@ class SummaryCards extends StatelessWidget {
         ? activities.fold(0.0, (p, e) => p + e.averageSpeedKmh) / count
         : 0.0;
 
+    // Average heart rate across activities that have it
+    final List<double> heartRates = activities
+        .map((a) => a.averageHeartRateBpm)
+        .where((hr) => hr != null)
+        .cast<double>()
+        .toList();
+    final double avgHeartRate = heartRates.isNotEmpty
+        ? heartRates.reduce((a, b) => a + b) / heartRates.length
+        : 0.0;
+
     final List<_StatCard> items = <_StatCard>[
       _StatCard(title: 'Rides', value: '$count'),
       _StatCard(title: 'Distance', value: '${totalKm.toStringAsFixed(1)} km'),
@@ -25,6 +35,8 @@ class SummaryCards extends StatelessWidget {
       _StatCard(title: 'Energy', value: '${totalKcal.toStringAsFixed(0)} kcal'),
       _StatCard(
           title: 'Avg speed', value: '${avgSpeed.toStringAsFixed(1)} km/h'),
+      _StatCard(
+          title: 'Avg HR', value: '${avgHeartRate.toStringAsFixed(0)} bpm'),
     ];
 
     return GridView.builder(

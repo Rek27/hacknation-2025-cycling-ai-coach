@@ -12,6 +12,11 @@ import 'package:hackathon/view/scheduler/scheduler_view.dart';
 import 'package:provider/provider.dart';
 import 'package:hackathon/view/home/home_controller.dart';
 
+/// The HomeView is the main view for the home screen.
+///
+/// It displays a summary of the user's cycling activities and allows the user to add new activities.
+/// It shows statistics and charts for the user's cycling activities.
+/// It also displays a chatbot for the user to ask questions about their cycling activities.
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
 

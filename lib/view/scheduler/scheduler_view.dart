@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:hackathon/themes/app_constants.dart';
+import 'package:hackathon/view/scheduler/scheduler_controller.dart';
 import 'package:kalender/kalender.dart';
-import 'package:hackathon/dto/schedule_interval_dto.dart';
 import 'package:hackathon/model/schedule_interval.dart';
+import 'package:hackathon/model/cycling_activity.dart';
+import 'package:provider/provider.dart';
 
+/// The SchedulerView is the main view for the scheduler.
+/// It displays a calendar with events and allows the user to create, edit, and delete events.
+/// It also displays a list of activities and allows the user to create, edit, and delete activities.
 class SchedulerView extends StatefulWidget {
   const SchedulerView({super.key});
 
@@ -31,6 +36,7 @@ class _SchedulerViewState extends State<SchedulerView> {
 
   @override
   Widget build(BuildContext context) {
+    final controller = Provider.of<SchedulerController>(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Calendar'),
@@ -42,7 +48,7 @@ class _SchedulerViewState extends State<SchedulerView> {
               // Initial load for current week.
               setState(() => _isLoading = true);
               final now = DateTime.now();
-              final start = _startOfWeek(now);
+              final start = controller.startOfWeek(now);
               await _loadForRange(
                 DateTimeRange(
                   start: start,
@@ -86,7 +92,7 @@ class _SchedulerViewState extends State<SchedulerView> {
                   // Tap on empty space → create 60-min draft and open form.
                   onTapped: (dateTime) {
                     () async {
-                      final start = _snapTo15(dateTime);
+                      final start = controller.snapTo15(dateTime);
                       final draft = CalendarEvent(
                         dateTimeRange: DateTimeRange(
                             start: start,
@@ -171,8 +177,9 @@ class _SchedulerViewState extends State<SchedulerView> {
                       );
 
                       try {
-                        await ScheduleIntervalDto.updateInterval(
-                            updatedInterval);
+                        await Provider.of<SchedulerController>(context,
+                                listen: false)
+                            .updateInterval(updatedInterval);
                         _events.updateEvent(
                           event: updated,
                           updatedEvent: updated.copyWith(data: updatedInterval),
@@ -203,32 +210,20 @@ class _SchedulerViewState extends State<SchedulerView> {
     );
   }
 
-  // --- Colors per category ---
-  Color _bgFor(ScheduleType? t) {
-    switch (t) {
-      case ScheduleType.cycling:
-        return Colors.green.shade600;
-      case ScheduleType.work:
-        return Colors.blue.shade600;
-      case ScheduleType.other:
-        return Colors.orange.shade600;
-      default:
-        return Theme.of(context).colorScheme.secondaryContainer;
-    }
-  }
-
-  Color _fgFor(Color bg) => bg.computeLuminance() > 0.5
-      ? Theme.of(context).colorScheme.onSurface
-      : Theme.of(context).colorScheme.surface;
-
-  // --- Unified tile builder for header/body (fixes "Tile" text) ---
   Widget _eventTile(CalendarEvent event, DateTimeRange tileRange) {
+    final controller = Provider.of<SchedulerController>(context);
     final s =
         event.data is ScheduleInterval ? event.data as ScheduleInterval : null;
-    final bg = _bgFor(s?.type);
-    final title = (s?.title?.trim().isNotEmpty ?? false)
-        ? s!.title!.trim()
-        : (s != null ? scheduleTypeToString(s.type) : 'New interval');
+    final a =
+        event.data is CyclingActivity ? event.data as CyclingActivity : null;
+    final bg = a != null
+        ? controller.bgFor(ScheduleType.cycling)
+        : controller.bgFor(s?.type);
+    final title = a != null
+        ? 'Cycling'
+        : (s?.title?.trim().isNotEmpty ?? false)
+            ? s!.title!.trim()
+            : (s != null ? scheduleTypeToString(s.type) : 'New interval');
 
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -242,54 +237,27 @@ class _SchedulerViewState extends State<SchedulerView> {
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
-          color: _fgFor(bg),
+          color: controller.fgFor(bg, context),
           fontWeight: FontWeight.w600,
         ),
       ),
     );
   }
 
-  String _formatDT(BuildContext context, DateTime dt, {bool use24h = true}) {
-    final l = MaterialLocalizations.of(context);
-    final date = l.formatFullDate(dt.toLocal()); // display local
-    final time = l.formatTimeOfDay(
-      TimeOfDay.fromDateTime(dt.toLocal()),
-      alwaysUse24HourFormat: use24h,
-    ); // e.g., 14:30
-    return '$date, $time';
-  }
-
-  // ===== Data load & mapping =================================================
-
   Future<void> _loadForRange(DateTimeRange range) async {
     setState(() => _isLoading = true);
     try {
-      // Query backend in UTC to avoid timezone drift
-      final items = await ScheduleIntervalDto.readIntervals(
-        start: range.start.toUtc(),
-        end: range.end.toUtc(),
-      );
+      final events =
+          await Provider.of<SchedulerController>(context, listen: false)
+              .buildEventsForRange(range);
       _events.clearEvents();
-      _events.addEvents(items.map(_toEvent).toList());
+      _events.addEvents(events);
     } catch (e) {
       _showError('Failed to load: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
-  CalendarEvent _toEvent(ScheduleInterval s) {
-    // Kalender appears to render tiles using local assumptions. If your backend
-    // stores UTC, passing UTC here avoids double-applying the local offset.
-    final DateTime startUtc = s.start.isUtc ? s.start : s.start.toUtc();
-    final DateTime endUtc = s.end.isUtc ? s.end : s.end.toUtc();
-    return CalendarEvent(
-      dateTimeRange: DateTimeRange(start: startUtc, end: endUtc),
-      data: s,
-    );
-  }
-
-  // ===== Dialogs =============================================================
 
   Future<ScheduleInterval?> _openCreateDialog(DateTimeRange slot) async {
     final ScheduleInterval draft = ScheduleInterval(
@@ -321,6 +289,7 @@ class _SchedulerViewState extends State<SchedulerView> {
     ScheduleType selectedType = base.type;
     DateTime startAt = base.start;
     DateTime endAt = base.end;
+    final controller = Provider.of<SchedulerController>(context);
 
     final bool? saved = await showDialog<bool>(
       context: context,
@@ -399,14 +368,14 @@ class _SchedulerViewState extends State<SchedulerView> {
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: const Text('Start'),
-                      subtitle: Text(_formatDT(context, startAt)),
+                      subtitle: Text(controller.formatDT(context, startAt)),
                       trailing: const Icon(Icons.edit_calendar),
                       onTap: pickStart,
                     ),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: const Text('End'),
-                      subtitle: Text(_formatDT(context, endAt)),
+                      subtitle: Text(controller.formatDT(context, endAt)),
                       trailing: const Icon(Icons.edit_calendar),
                       onTap: pickEnd,
                     ),
@@ -436,11 +405,15 @@ class _SchedulerViewState extends State<SchedulerView> {
                             : descCtrl.text.trim(),
                       );
                       if (isCreate) {
-                        await ScheduleIntervalDto.insertInterval(updated);
+                        await Provider.of<SchedulerController>(context,
+                                listen: false)
+                            .insertInterval(updated);
                         base =
                             updated; // server will assign ID; caller will trigger reload
                       } else {
-                        await ScheduleIntervalDto.updateInterval(updated);
+                        await Provider.of<SchedulerController>(context,
+                                listen: false)
+                            .updateInterval(updated);
                         base = updated;
                       }
                       if (context.mounted) Navigator.pop(context, true);
@@ -458,20 +431,6 @@ class _SchedulerViewState extends State<SchedulerView> {
     );
 
     return saved == true ? base : null;
-  }
-
-  // ===== Helpers =============================================================
-
-  DateTime _startOfWeek(DateTime d) {
-    final weekday = d.weekday; // 1=Mon
-    return DateTime(d.year, d.month, d.day)
-        .subtract(Duration(days: weekday - 1));
-  }
-
-  DateTime _snapTo15(DateTime dt) {
-    final minutes = (dt.minute ~/ 15) * 15;
-    // Keep local time when creating new slots
-    return DateTime(dt.year, dt.month, dt.day, dt.hour, minutes);
   }
 
   void _showError(String message) {
