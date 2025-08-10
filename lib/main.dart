@@ -7,8 +7,6 @@ import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
-import 'model/schedule_interval.dart';
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 

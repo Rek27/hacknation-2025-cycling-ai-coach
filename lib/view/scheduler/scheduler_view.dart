@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hackathon/themes/app_constants.dart';
 import 'package:kalender/kalender.dart';
 import 'package:hackathon/dto/schedule_interval_dto.dart';
 import 'package:hackathon/model/schedule_interval.dart';
@@ -22,7 +23,8 @@ class _SchedulerViewState extends State<SchedulerView> {
     // Initial load for current week.
     final now = DateTime.now();
     final start = _startOfWeek(now);
-    _loadForRange(DateTimeRange(start: start, end: start.add(const Duration(days: 7))));
+    _loadForRange(
+        DateTimeRange(start: start, end: start.add(const Duration(days: 7))));
   }
 
   @override
@@ -35,28 +37,36 @@ class _SchedulerViewState extends State<SchedulerView> {
   // --- Colors per category ---
   Color _bgFor(ScheduleType? t) {
     switch (t) {
-      case ScheduleType.cycling: return Colors.green.shade600;
-      case ScheduleType.work:    return Colors.blue.shade600;
-      case ScheduleType.other:   return Colors.orange.shade600;
-      default: return Theme.of(context).colorScheme.secondaryContainer;
+      case ScheduleType.cycling:
+        return Colors.green.shade600;
+      case ScheduleType.work:
+        return Colors.blue.shade600;
+      case ScheduleType.other:
+        return Colors.orange.shade600;
+      default:
+        return Theme.of(context).colorScheme.secondaryContainer;
     }
   }
 
-  Color _fgFor(Color bg) => bg.computeLuminance() > 0.5 ? Colors.black : Colors.white;
+  Color _fgFor(Color bg) => bg.computeLuminance() > 0.5
+      ? Theme.of(context).colorScheme.onSurface
+      : Theme.of(context).colorScheme.surface;
 
   // --- Unified tile builder for header/body (fixes "Tile" text) ---
   Widget _eventTile(CalendarEvent event, DateTimeRange tileRange) {
-    final s = event.data is ScheduleInterval ? event.data as ScheduleInterval : null;
+    final s =
+        event.data is ScheduleInterval ? event.data as ScheduleInterval : null;
     final bg = _bgFor(s?.type);
     final title = (s?.title?.trim().isNotEmpty ?? false)
         ? s!.title!.trim()
         : (s != null ? scheduleTypeToString(s.type) : 'New interval');
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+          horizontal: Spacings.s, vertical: Spacings.xs),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(Radiuses.s),
       ),
       child: Text(
         title,
@@ -83,132 +93,156 @@ class _SchedulerViewState extends State<SchedulerView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(/* ... */),
-      body: Stack(
-        children: [
-          CalendarView(
-            eventsController: _events,
-            calendarController: _calendar,
-            viewConfiguration: MultiDayViewConfiguration.custom(numberOfDays: 3),
-            // Use the same custom tiles in both header & body:
-            header: CalendarHeader(
-              multiDayTileComponents: TileComponents(tileBuilder: _eventTile),
-            ), // header supports multiDayTileComponents. :contentReference[oaicite:1]{index=1}
-            body: CalendarBody(
-              multiDayTileComponents: TileComponents(tileBuilder: _eventTile),
-              // CalendarBody exposes multiDayTileComponents. :contentReference[oaicite:2]{index=2}
-              snapping: ValueNotifier(CalendarSnapping(snapIntervalMinutes: 15)),
-              interaction: ValueNotifier(CalendarInteraction(
-                allowEventCreation: true,
-                allowRescheduling: true,
-                allowResizing: true,
-              )),
-            ),
-            // Calendar behavior hooks (paging, taps, create, drag/resize).
-            callbacks: CalendarCallbacks(
-          // When the visible page (week) changes, reload from DB.
-          onPageChanged: (visible) => _loadForRange(visible),
-          // Tap on empty space → create 60-min draft and open form.
-          onTapped: (dateTime) {
-            () async {
-              final start = _snapTo15(dateTime);
-              final draft = CalendarEvent(
-                dateTimeRange: DateTimeRange(start: start, end: start.add(const Duration(hours: 1))),
-                data: null,
-              );
-              _events.addEvent(draft);
-              final saved = await _openCreateDialog(draft.dateTimeRange);
-              if (saved == null) {
-                _events.removeEvent(draft);
-              } else {
-                _events.updateEvent(
-                  event: draft,
-                  updatedEvent: draft.copyWith(
-                    dateTimeRange: DateTimeRange(start: saved.start, end: saved.end),
-                  ),
-                );
-                // Ensure server-generated IDs are reflected
-                final range = _calendar.visibleDateTimeRange.value;
-                _loadForRange(range);
-              }
-            }();
-          },
-          // After a new event is created via drag long-press gesture, open form.
-          onEventCreated: (event) {
-            () async {
-              // If user drags to create; attach details via dialog.
-              final saved = await _openCreateDialog(event.dateTimeRange);
-              if (saved == null) {
-                _events.removeEvent(event);
-              } else {
-                _events.updateEvent(
-                  event: event,
-                  updatedEvent: event.copyWith(
-                    data: saved,
-                    dateTimeRange: DateTimeRange(start: saved.start, end: saved.end),
-                  ),
-                );
-                // Ensure server-generated IDs are reflected
-                final range = _calendar.visibleDateTimeRange.value;
-                _loadForRange(range);
-              }
-            }();
-          },
-          // Tap event → open edit.
-          onEventTapped: (event, renderBox) {
-            () async {
-              final data = event.data;
-              if (data is ScheduleInterval) {
-                await _openEditDialog(data);
-              }
-            }();
-          },
-          // Drag/resize → persist; rollback on failure.
-          onEventChanged: (previous, updated) {
-            () async {
-              final s = previous.data is ScheduleInterval ? previous.data as ScheduleInterval : null;
-              if (s == null) return;
-              // Block updates for unsynced events (no ID yet)
-              if (s.id == null || s.id!.isEmpty) {
-                _showError('Event is syncing. Please try again shortly.');
-                _events.updateEvent(event: updated, updatedEvent: previous);
-                return;
-              }
+      appBar: AppBar(
+        title: const Text('Calendar'),
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(Spacings.m),
+          child: Stack(
+            children: [
+              CalendarView(
+                eventsController: _events,
+                calendarController: _calendar,
+                viewConfiguration:
+                    MultiDayViewConfiguration.custom(numberOfDays: 3),
+                // Use the same custom tiles in both header & body:
+                header: CalendarHeader(
+                  multiDayTileComponents:
+                      TileComponents(tileBuilder: _eventTile),
+                ), // header supports multiDayTileComponents. :contentReference[oaicite:1]{index=1}
+                body: CalendarBody(
+                  multiDayTileComponents:
+                      TileComponents(tileBuilder: _eventTile),
+                  // CalendarBody exposes multiDayTileComponents. :contentReference[oaicite:2]{index=2}
+                  snapping:
+                      ValueNotifier(CalendarSnapping(snapIntervalMinutes: 15)),
+                  interaction: ValueNotifier(CalendarInteraction(
+                    allowEventCreation: true,
+                    allowRescheduling: true,
+                    allowResizing: true,
+                  )),
+                ),
+                // Calendar behavior hooks (paging, taps, create, drag/resize).
+                callbacks: CalendarCallbacks(
+                  // When the visible page (week) changes, reload from DB.
+                  onPageChanged: (visible) => _loadForRange(visible),
+                  // Tap on empty space → create 60-min draft and open form.
+                  onTapped: (dateTime) {
+                    () async {
+                      final start = _snapTo15(dateTime);
+                      final draft = CalendarEvent(
+                        dateTimeRange: DateTimeRange(
+                            start: start,
+                            end: start.add(const Duration(hours: 1))),
+                        data: null,
+                      );
+                      _events.addEvent(draft);
+                      final saved =
+                          await _openCreateDialog(draft.dateTimeRange);
+                      if (saved == null) {
+                        _events.removeEvent(draft);
+                      } else {
+                        _events.updateEvent(
+                          event: draft,
+                          updatedEvent: draft.copyWith(
+                            dateTimeRange: DateTimeRange(
+                                start: saved.start, end: saved.end),
+                          ),
+                        );
+                        // Ensure server-generated IDs are reflected
+                        final range = _calendar.visibleDateTimeRange.value;
+                        _loadForRange(range);
+                      }
+                    }();
+                  },
+                  // After a new event is created via drag long-press gesture, open form.
+                  onEventCreated: (event) {
+                    () async {
+                      // If user drags to create; attach details via dialog.
+                      final saved =
+                          await _openCreateDialog(event.dateTimeRange);
+                      if (saved == null) {
+                        _events.removeEvent(event);
+                      } else {
+                        _events.updateEvent(
+                          event: event,
+                          updatedEvent: event.copyWith(
+                            data: saved,
+                            dateTimeRange: DateTimeRange(
+                                start: saved.start, end: saved.end),
+                          ),
+                        );
+                        // Ensure server-generated IDs are reflected
+                        final range = _calendar.visibleDateTimeRange.value;
+                        _loadForRange(range);
+                      }
+                    }();
+                  },
+                  // Tap event → open edit.
+                  onEventTapped: (event, renderBox) {
+                    () async {
+                      final data = event.data;
+                      if (data is ScheduleInterval) {
+                        await _openEditDialog(data);
+                      }
+                    }();
+                  },
+                  // Drag/resize → persist; rollback on failure.
+                  onEventChanged: (previous, updated) {
+                    () async {
+                      final s = previous.data is ScheduleInterval
+                          ? previous.data as ScheduleInterval
+                          : null;
+                      if (s == null) return;
+                      // Block updates for unsynced events (no ID yet)
+                      if (s.id == null || s.id!.isEmpty) {
+                        _showError(
+                            'Event is syncing. Please try again shortly.');
+                        _events.updateEvent(
+                            event: updated, updatedEvent: previous);
+                        return;
+                      }
 
-              final updatedInterval = ScheduleInterval(
-                id: s.id,
-                userId: s.userId,
-                type: s.type,
-                start: updated.dateTimeRange.start,
-                end: updated.dateTimeRange.end,
-                title: s.title,
-                description: s.description,
-              );
+                      final updatedInterval = ScheduleInterval(
+                        id: s.id,
+                        userId: s.userId,
+                        type: s.type,
+                        start: updated.dateTimeRange.start,
+                        end: updated.dateTimeRange.end,
+                        title: s.title,
+                        description: s.description,
+                      );
 
-              try {
-                await ScheduleIntervalDto.updateInterval(updatedInterval);
-                _events.updateEvent(
-                  event: updated,
-                  updatedEvent: updated.copyWith(data: updatedInterval),
-                );
-              } catch (e) {
-                _showError('Failed to update interval: $e');
-                _events.updateEvent(event: updated, updatedEvent: previous); // rollback visuals
-              }
-            }();
-          },
-            ),
-          ),
-          if (_isLoading)
-            Positioned.fill(
-              child: AbsorbPointer(
-                child: Container(
-                  color: Colors.black26,
-                  child: const Center(child: CircularProgressIndicator()),
+                      try {
+                        await ScheduleIntervalDto.updateInterval(
+                            updatedInterval);
+                        _events.updateEvent(
+                          event: updated,
+                          updatedEvent: updated.copyWith(data: updatedInterval),
+                        );
+                      } catch (e) {
+                        _showError('Failed to update interval: $e');
+                        _events.updateEvent(
+                            event: updated,
+                            updatedEvent: previous); // rollback visuals
+                      }
+                    }();
+                  },
                 ),
               ),
-            ),
-        ],
+              if (_isLoading)
+                Positioned.fill(
+                  child: AbsorbPointer(
+                    child: Container(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      child: const Center(child: CircularProgressIndicator()),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -218,7 +252,8 @@ class _SchedulerViewState extends State<SchedulerView> {
   Future<void> _loadForRange(DateTimeRange range) async {
     setState(() => _isLoading = true);
     try {
-      final items = await ScheduleIntervalDto.readIntervals(start: range.start, end: range.end);
+      final items = await ScheduleIntervalDto.readIntervals(
+          start: range.start, end: range.end);
       _events.clearEvents();
       _events.addEvents(items.map(_toEvent).toList());
     } catch (e) {
@@ -259,9 +294,9 @@ class _SchedulerViewState extends State<SchedulerView> {
   }
 
   Future<ScheduleInterval?> _openEditOrCreateDialog(
-      ScheduleInterval base, {
-        required bool isCreate,
-      }) async {
+    ScheduleInterval base, {
+    required bool isCreate,
+  }) async {
     final titleCtrl = TextEditingController(text: base.title ?? '');
     final descCtrl = TextEditingController(text: base.description ?? '');
     ScheduleType selectedType = base.type;
@@ -274,24 +309,40 @@ class _SchedulerViewState extends State<SchedulerView> {
         return StatefulBuilder(
           builder: (context, setInner) {
             Future<void> pickStart() async {
-              final d = await showDatePicker(context: context, firstDate: DateTime(2000), lastDate: DateTime(2100), initialDate: startAt);
+              final d = await showDatePicker(
+                  context: context,
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                  initialDate: startAt,
+                  );
               if (d == null) return;
-              final t = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(startAt));
+              final t = await showTimePicker(
+                  context: context,
+                  initialTime: TimeOfDay.fromDateTime(startAt));
               if (t == null) return;
               setInner(() {
                 startAt = DateTime(d.year, d.month, d.day, t.hour, t.minute);
-                if (!startAt.isBefore(endAt)) endAt = startAt.add(const Duration(minutes: 30));
+                if (!startAt.isBefore(endAt)) {
+                  endAt = startAt.add(const Duration(minutes: 30));
+                }
               });
             }
 
             Future<void> pickEnd() async {
-              final d = await showDatePicker(context: context, firstDate: DateTime(2000), lastDate: DateTime(2100), initialDate: endAt);
+              final d = await showDatePicker(
+                  context: context,
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                  initialDate: endAt);
               if (d == null) return;
-              final t = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(endAt));
+              final t = await showTimePicker(
+                  context: context, initialTime: TimeOfDay.fromDateTime(endAt));
               if (t == null) return;
               setInner(() {
                 endAt = DateTime(d.year, d.month, d.day, t.hour, t.minute);
-                if (!startAt.isBefore(endAt)) startAt = endAt.subtract(const Duration(minutes: 30));
+                if (!startAt.isBefore(endAt)) {
+                  startAt = endAt.subtract(const Duration(minutes: 30));
+                }
               });
             }
 
@@ -301,19 +352,31 @@ class _SchedulerViewState extends State<SchedulerView> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: 'Title')),
-                    const SizedBox(height: 8),
-                    TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Description'), maxLines: 3),
-                    const SizedBox(height: 8),
+                    TextField(
+                      controller: titleCtrl,
+                      decoration: const InputDecoration(labelText: 'Title'),
+                    ),
+                    const SizedBox(height: Spacings.m),
+                    TextField(
+                      controller: descCtrl,
+                      decoration: const InputDecoration(
+                          labelText: 'Description', alignLabelWithHint: true),
+                      maxLines: 3,
+                      textAlign: TextAlign.start,
+                    ),
+                    const SizedBox(height: Spacings.m),
                     DropdownButtonFormField<ScheduleType>(
                       value: selectedType,
                       decoration: const InputDecoration(labelText: 'Category'),
-                      items: ScheduleType.values.map((s) => DropdownMenuItem(value: s, child: Text(scheduleTypeToString(s)))).toList(),
+                      items: ScheduleType.values
+                          .map((s) => DropdownMenuItem(
+                              value: s, child: Text(scheduleTypeToString(s))))
+                          .toList(),
                       onChanged: (v) => setInner(() {
                         if (v != null) selectedType = v;
                       }),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: Spacings.m),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: const Text('Start'),
@@ -332,8 +395,10 @@ class _SchedulerViewState extends State<SchedulerView> {
                 ),
               ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                FilledButton(
+                TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Cancel')),
+                ElevatedButton(
                   onPressed: () async {
                     if (!startAt.isBefore(endAt)) return;
                     try {
@@ -343,12 +408,17 @@ class _SchedulerViewState extends State<SchedulerView> {
                         type: selectedType,
                         start: startAt,
                         end: endAt,
-                        title: titleCtrl.text.trim().isEmpty ? null : titleCtrl.text.trim(),
-                        description: descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
+                        title: titleCtrl.text.trim().isEmpty
+                            ? null
+                            : titleCtrl.text.trim(),
+                        description: descCtrl.text.trim().isEmpty
+                            ? null
+                            : descCtrl.text.trim(),
                       );
                       if (isCreate) {
                         await ScheduleIntervalDto.insertInterval(updated);
-                        base = updated; // server will assign ID; caller will trigger reload
+                        base =
+                            updated; // server will assign ID; caller will trigger reload
                       } else {
                         await ScheduleIntervalDto.updateInterval(updated);
                         base = updated;
@@ -374,7 +444,8 @@ class _SchedulerViewState extends State<SchedulerView> {
 
   DateTime _startOfWeek(DateTime d) {
     final weekday = d.weekday; // 1=Mon
-    return DateTime(d.year, d.month, d.day).subtract(Duration(days: weekday - 1));
+    return DateTime(d.year, d.month, d.day)
+        .subtract(Duration(days: weekday - 1));
   }
 
   DateTime _snapTo15(DateTime dt) {
@@ -384,6 +455,7 @@ class _SchedulerViewState extends State<SchedulerView> {
 
   void _showError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 }

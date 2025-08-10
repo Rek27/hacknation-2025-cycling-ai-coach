@@ -68,4 +68,19 @@ class CyclingActivity {
       'vo2max',
     ];
   }
+
+  List<String> toCsvRow() {
+    return <String>[
+      startTime.toIso8601String(),
+      endTime.toIso8601String(),
+      duration.inSeconds.toString(),
+      distanceKm.toStringAsFixed(3),
+      averageSpeedKmh.toStringAsFixed(2),
+      activeEnergyKcal.toStringAsFixed(1),
+      (elevationGainMeters ?? 0).toStringAsFixed(1),
+      (averageHeartRateBpm ?? 0).toStringAsFixed(0),
+      (maxHeartRateBpm ?? 0).toStringAsFixed(0),
+      (vo2Max ?? 0).toStringAsFixed(1),
+    ];
+  }
 }

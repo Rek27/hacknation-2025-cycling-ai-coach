@@ -19,16 +19,17 @@ class CyclingActivityDto {
       'p_offset': offset,
     };
 
-    final data = await supabase.rpc<dynamic>('load_cycling_activities', params: params);
+    final data =
+        await supabase.rpc<dynamic>('load_cycling_activities', params: params);
 
     if (data == null) return <CyclingActivity>[];
 
     final list = (data as List).cast<dynamic>();
     return list
-        .map((e) => CyclingActivity.fromJson((e as Map).cast<String, dynamic>()))
+        .map(
+            (e) => CyclingActivity.fromJson((e as Map).cast<String, dynamic>()))
         .toList(growable: false);
   }
-
 
   static Future<String?> insertActivity({
     required String userId,
@@ -50,11 +51,10 @@ class CyclingActivityDto {
       'p_vo2max': activity.vo2Max,
     };
 
-    final result = await supabase.rpc<dynamic>('insert_cycling_activity', params: params);
+    final result =
+        await supabase.rpc<dynamic>('insert_cycling_activity', params: params);
     // RPC returns the new id (uuid). It may already be a String.
     if (result == null) return null;
     return result.toString();
   }
 }
-
-
