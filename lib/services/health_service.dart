@@ -16,6 +16,27 @@ class HealthService {
     _configured = true;
   }
 
+  double _asDouble(dynamic value) {
+    // Health package v13 uses typed HealthValue wrappers
+    try {
+      if (value is num) return value.toDouble();
+      // NumericHealthValue from package:health
+      // ignore: avoid_dynamic_calls
+      final dynamic maybeNumeric = value;
+      if (maybeNumeric != null && maybeNumeric is Object) {
+        // Try common property names without importing internal classes directly
+        // ignore: avoid_dynamic_calls
+        final dynamic numeric = (maybeNumeric as dynamic).numericValue;
+        if (numeric is num) return numeric.toDouble();
+        // Some versions expose .value
+        // ignore: avoid_dynamic_calls
+        final dynamic val = (maybeNumeric as dynamic).value;
+        if (val is num) return val.toDouble();
+      }
+    } catch (_) {}
+    return 0.0;
+  }
+
   Future<bool> requestPermissions({
     bool readCycling = true,
     bool requestWriteAlso = false,
@@ -82,8 +103,8 @@ class HealthService {
       types: types,
     );
 
-    // Group data by workout sessions (cycling only)
-    // The health package exposes WORKOUT samples with metadata fields.
+    // Group data by workout sessions. We'll consider a workout a cycling activity
+    // if it contains any DISTANCE_CYCLING samples in its time window.
     final List<HealthDataPoint> workouts = points
         .where((p) => p.type == HealthDataType.WORKOUT)
         .toList(growable: false);
@@ -91,15 +112,6 @@ class HealthService {
     final List<CyclingActivity> activities = <CyclingActivity>[];
 
     for (final HealthDataPoint w in workouts) {
-      final String valueStr = w.value.toString().toLowerCase();
-      final Map<String, dynamic>? meta = w.metadata;
-      final String? metaA = meta?['HKWorkoutActivityType']?.toString();
-      final String? metaB = meta?['workoutActivityType']?.toString();
-      final bool isCycling = valueStr.contains('cycling') ||
-          (metaA?.toLowerCase().contains('cycling') ?? false) ||
-          (metaB?.toLowerCase().contains('cycling') ?? false);
-      if (!isCycling) continue;
-
       final DateTime startTime = w.dateFrom;
       final DateTime endTime = w.dateTo;
       final Duration duration = endTime.difference(startTime);
@@ -119,20 +131,25 @@ class HealthService {
         if (!within(p.dateFrom) && !within(p.dateTo)) continue;
         switch (p.type) {
           case HealthDataType.DISTANCE_CYCLING:
-            distanceMeters += (p.value as num).toDouble();
+            distanceMeters += _asDouble(p.value);
             break;
           case HealthDataType.ACTIVE_ENERGY_BURNED:
-            energyKcal += (p.value as num).toDouble();
+            energyKcal += _asDouble(p.value);
             break;
           // Cycling speed not available as a dedicated type in this package; derive from distance/duration
           case HealthDataType.HEART_RATE:
-            final double v = (p.value as num).toDouble();
+            final double v = _asDouble(p.value);
             hrValues.add(v);
             if (maxHr == null || v > maxHr) maxHr = v;
             break;
           default:
             break;
         }
+      }
+
+      // Skip workouts with no cycling distance; avoids relying on metadata that may differ across platforms
+      if (distanceMeters <= 0) {
+        continue;
       }
 
       final double distanceKm = distanceMeters / 1000.0;
@@ -168,6 +185,7 @@ class HealthService {
 
     // Sort by start time descending
     activities.sort((a, b) => b.startTime.compareTo(a.startTime));
+    print('activities: $activities');
     return activities;
   }
 }

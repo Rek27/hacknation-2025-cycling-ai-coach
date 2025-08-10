@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:hackathon/themes/app_constants.dart';
-import 'package:hackathon/view/home/ai_chat.dart';
+import 'package:hackathon/view/home/widgets/ai_chat.dart';
 import 'package:hackathon/view/home/widgets/distance_line_chart.dart';
 import 'package:hackathon/view/home/widgets/energy_bar_chart.dart';
 import 'package:hackathon/view/home/widgets/heart_rate_line_chart.dart';
 import 'package:hackathon/view/home/widgets/speed_line_chart.dart';
 import 'package:hackathon/view/home/widgets/summary_cards.dart';
+import 'package:hackathon/view/scheduler/scheduler_view.dart';
 import 'package:provider/provider.dart';
 import 'package:hackathon/view/home/home_controller.dart';
 
@@ -30,7 +31,15 @@ class _HomeViewState extends State<HomeView> {
         title: const Text('Cycling Coach'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.sync),
+            icon: const Icon(Icons.calendar_month),
+            tooltip: 'Calendar',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SchedulerView()),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.import_export),
             tooltip: 'Sync last 90 days',
             onPressed: () async {
               final success = await controller.syncFromHealth();
@@ -45,11 +54,6 @@ class _HomeViewState extends State<HomeView> {
                 );
               }
             },
-          ),
-          IconButton(
-            icon: const Icon(Icons.ios_share),
-            tooltip: 'Export CSV',
-            onPressed: () => controller.exportCyclingCsvAndShare(),
           ),
         ],
       ),
@@ -91,8 +95,6 @@ class _HomeViewState extends State<HomeView> {
           ],
         ),
       ),
-      // AI chat detached for now
-      floatingActionButton: null,
     );
   }
 }

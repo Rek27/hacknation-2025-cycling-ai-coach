@@ -82,9 +82,9 @@ class _SchedulerViewState extends State<SchedulerView> {
 
   String _formatDT(BuildContext context, DateTime dt, {bool use24h = true}) {
     final l = MaterialLocalizations.of(context);
-    final date = l.formatFullDate(dt); // e.g., Monday, August 11, 2025
+    final date = l.formatFullDate(dt.toLocal()); // display local
     final time = l.formatTimeOfDay(
-      TimeOfDay.fromDateTime(dt),
+      TimeOfDay.fromDateTime(dt.toLocal()),
       alwaysUse24HourFormat: use24h,
     ); // e.g., 14:30
     return '$date, $time';
@@ -106,15 +106,13 @@ class _SchedulerViewState extends State<SchedulerView> {
                 calendarController: _calendar,
                 viewConfiguration:
                     MultiDayViewConfiguration.custom(numberOfDays: 3),
-                // Use the same custom tiles in both header & body:
                 header: CalendarHeader(
                   multiDayTileComponents:
                       TileComponents(tileBuilder: _eventTile),
-                ), // header supports multiDayTileComponents. :contentReference[oaicite:1]{index=1}
+                ),
                 body: CalendarBody(
                   multiDayTileComponents:
                       TileComponents(tileBuilder: _eventTile),
-                  // CalendarBody exposes multiDayTileComponents. :contentReference[oaicite:2]{index=2}
                   snapping:
                       ValueNotifier(CalendarSnapping(snapIntervalMinutes: 15)),
                   interaction: ValueNotifier(CalendarInteraction(
@@ -252,8 +250,11 @@ class _SchedulerViewState extends State<SchedulerView> {
   Future<void> _loadForRange(DateTimeRange range) async {
     setState(() => _isLoading = true);
     try {
+      // Query backend in UTC to avoid timezone drift
       final items = await ScheduleIntervalDto.readIntervals(
-          start: range.start, end: range.end);
+        start: range.start.toUtc(),
+        end: range.end.toUtc(),
+      );
       _events.clearEvents();
       _events.addEvents(items.map(_toEvent).toList());
     } catch (e) {
@@ -264,9 +265,13 @@ class _SchedulerViewState extends State<SchedulerView> {
   }
 
   CalendarEvent _toEvent(ScheduleInterval s) {
+    // Kalender appears to render tiles using local assumptions. If your backend
+    // stores UTC, passing UTC here avoids double-applying the local offset.
+    final DateTime startUtc = s.start.isUtc ? s.start : s.start.toUtc();
+    final DateTime endUtc = s.end.isUtc ? s.end : s.end.toUtc();
     return CalendarEvent(
-      dateTimeRange: DateTimeRange(start: s.start, end: s.end),
-      data: s, // attach your model for easy retrieval
+      dateTimeRange: DateTimeRange(start: startUtc, end: endUtc),
+      data: s,
     );
   }
 
@@ -310,11 +315,11 @@ class _SchedulerViewState extends State<SchedulerView> {
           builder: (context, setInner) {
             Future<void> pickStart() async {
               final d = await showDatePicker(
-                  context: context,
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime(2100),
-                  initialDate: startAt,
-                  );
+                context: context,
+                firstDate: DateTime(2000),
+                lastDate: DateTime(2100),
+                initialDate: startAt,
+              );
               if (d == null) return;
               final t = await showTimePicker(
                   context: context,
@@ -402,12 +407,13 @@ class _SchedulerViewState extends State<SchedulerView> {
                   onPressed: () async {
                     if (!startAt.isBefore(endAt)) return;
                     try {
+                      // Persist in UTC to avoid cross-timezone skew
                       final updated = ScheduleInterval(
                         id: base.id,
                         userId: base.userId,
                         type: selectedType,
-                        start: startAt,
-                        end: endAt,
+                        start: startAt.toUtc(),
+                        end: endAt.toUtc(),
                         title: titleCtrl.text.trim().isEmpty
                             ? null
                             : titleCtrl.text.trim(),
@@ -450,6 +456,7 @@ class _SchedulerViewState extends State<SchedulerView> {
 
   DateTime _snapTo15(DateTime dt) {
     final minutes = (dt.minute ~/ 15) * 15;
+    // Keep local time when creating new slots
     return DateTime(dt.year, dt.month, dt.day, dt.hour, minutes);
   }
 
