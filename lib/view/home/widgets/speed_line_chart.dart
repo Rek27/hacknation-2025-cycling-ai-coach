@@ -1,7 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:hackathon/model/cycling_activity.dart';
-import 'package:hackathon/themes/app_constants.dart';
+import 'package:hackathon/view/home/widgets/chart_card.dart';
 
 class SpeedLineChart extends StatelessWidget {
   const SpeedLineChart(
@@ -23,8 +23,13 @@ class SpeedLineChart extends StatelessWidget {
         FlSpot(i.toDouble(), last[i].averageSpeedKmh)
     ];
 
-    return _ChartCard(
+    final double avg = last.isEmpty
+        ? 0
+        : last.fold<double>(0, (p, e) => p + e.averageSpeedKmh) / last.length;
+
+    return ChartCard(
       title: 'Average speed (km/h)',
+      subtitle: 'Average: ${avg.toStringAsFixed(1)} km/h',
       child: LineChart(
         LineChartData(
           gridData: const FlGridData(show: false),
@@ -59,29 +64,6 @@ class SpeedLineChart extends StatelessWidget {
               barWidth: 3,
               dotData: const FlDotData(show: false),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ChartCard extends StatelessWidget {
-  const _ChartCard({required this.title, required this.child});
-  final String title;
-  final Widget child;
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(Spacings.m),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: theme.textTheme.titleMedium),
-            const SizedBox(height: Spacings.s),
-            SizedBox(height: 200, child: child),
           ],
         ),
       ),

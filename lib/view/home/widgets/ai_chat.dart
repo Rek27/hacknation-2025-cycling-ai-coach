@@ -4,6 +4,11 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+/// The AIChat is a widget that displays a chatbot for the user to ask questions about their cycling activities.
+///
+/// It uses the ElevenLabs Convai widget to display the chatbot.
+/// It handles the permission for the microphone, and the local server and
+/// the HTML for the chatbot
 class AIChat extends StatefulWidget {
   const AIChat({super.key});
 
@@ -49,7 +54,6 @@ class _AIChatState extends State<AIChat> {
     if (status.isGranted) return;
 
     final PermissionStatus res = await Permission.microphone.request();
-    print('res: $res');
     if (res.isPermanentlyDenied || res.isRestricted) {
       await openAppSettings();
     }
@@ -60,10 +64,12 @@ class _AIChatState extends State<AIChat> {
     return WebViewWidget(controller: _controller);
   }
 
+  /// Starts a local server to host the HTML for the chatbot.
+  ///
+  /// The server is started on the loopback address and the port is returned.
   Future<Uri> _startLocalServer() async {
     _server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     final int port = _server!.port;
-    print('server started on port $port');
 
     () async {
       await for (final HttpRequest request in _server!) {
@@ -82,6 +88,9 @@ class _AIChatState extends State<AIChat> {
     super.dispose();
   }
 
+  /// Builds the HTML for the chatbot.
+  ///
+  /// The HTML is returned as a [String] object.
   String _buildHtml() {
     const String agentId = 'agent_6001k2812qqde7k95sppksdhw516';
     const String scriptUrl =

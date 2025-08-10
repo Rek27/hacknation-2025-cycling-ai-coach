@@ -8,6 +8,7 @@ class SummaryCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     final int count = activities.length;
     final double totalKm = activities.fold(0.0, (p, e) => p + e.distanceKm);
     final double totalHours =
@@ -28,54 +29,109 @@ class SummaryCards extends StatelessWidget {
         ? heartRates.reduce((a, b) => a + b) / heartRates.length
         : 0.0;
 
-    final List<_StatCard> items = <_StatCard>[
-      _StatCard(title: 'Rides', value: '$count'),
-      _StatCard(title: 'Distance', value: '${totalKm.toStringAsFixed(1)} km'),
-      _StatCard(title: 'Time', value: '${totalHours.toStringAsFixed(1)} h'),
-      _StatCard(title: 'Energy', value: '${totalKcal.toStringAsFixed(0)} kcal'),
-      _StatCard(
-          title: 'Avg speed', value: '${avgSpeed.toStringAsFixed(1)} km/h'),
-      _StatCard(
-          title: 'Avg HR', value: '${avgHeartRate.toStringAsFixed(0)} bpm'),
-    ];
-
-    return GridView.builder(
-      padding: const EdgeInsets.only(bottom: Spacings.m),
-      physics: const NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
-      itemCount: items.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: Spacings.s,
-        mainAxisSpacing: Spacings.s,
-        childAspectRatio: 2.1,
-      ),
-      itemBuilder: (BuildContext context, int index) => items[index],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Last 90 days summary',
+          style: theme.textTheme.titleLarge,
+        ),
+        const SizedBox(height: Spacings.m),
+        Row(
+          children: [
+            Expanded(
+              child: _StatTile(
+                icon: Icons.directions_bike,
+                title: 'Rides',
+                subtitle: '$count',
+              ),
+            ),
+            const SizedBox(width: Spacings.m),
+            Expanded(
+              child: _StatTile(
+                icon: Icons.access_time,
+                title: 'Time',
+                subtitle: '${totalHours.toStringAsFixed(1)} h',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: Spacings.m),
+        Row(
+          children: [
+            Expanded(
+              child: _StatTile(
+                icon: Icons.route,
+                title: 'Distance',
+                subtitle: '${totalKm.toStringAsFixed(1)} km',
+              ),
+            ),
+            const SizedBox(width: Spacings.m),
+            Expanded(
+              child: _StatTile(
+                icon: Icons.local_fire_department,
+                title: 'Energy',
+                subtitle: '${totalKcal.toStringAsFixed(0)} kcal',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: Spacings.m),
+        _StatTile(
+          icon: Icons.speed,
+          title: 'Average speed',
+          subtitle: '${avgSpeed.toStringAsFixed(1)} km/h',
+        ),
+        const SizedBox(height: Spacings.m),
+        _StatTile(
+          icon: Icons.favorite,
+          title: 'Average heart rate',
+          subtitle: '${avgHeartRate.toStringAsFixed(0)} bpm',
+        ),
+      ],
     );
   }
 }
 
-class _StatCard extends StatelessWidget {
-  const _StatCard({required this.title, required this.value});
+class _StatTile extends StatelessWidget {
+  const _StatTile(
+      {required this.icon, required this.title, required this.subtitle});
+  final IconData icon;
   final String title;
-  final String value;
+  final String subtitle;
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(Spacings.s),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: theme.textTheme.bodyMedium),
-            const SizedBox(height: Spacings.s),
-            Text(value,
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold)),
-          ],
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: theme.colorScheme.onSurface,
+          width: BorderWidth.m,
         ),
+        borderRadius: BorderRadius.circular(Radiuses.s),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: Spacings.m,
+          vertical: Spacings.xxs,
+        ),
+        visualDensity: VisualDensity.compact,
+        minLeadingWidth: 0,
+        leading: Icon(
+          icon,
+          color: theme.colorScheme.secondary,
+          size: IconSizes.m,
+        ),
+        title: Text(
+          title,
+          style: theme.textTheme.bodyMedium,
+        ),
+        subtitle: Text(
+          subtitle,
+          style: theme.textTheme.titleMedium,
+        ),
+        dense: true,
       ),
     );
   }

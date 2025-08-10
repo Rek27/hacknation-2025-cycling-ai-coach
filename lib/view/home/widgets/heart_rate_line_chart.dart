@@ -1,7 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:hackathon/model/cycling_activity.dart';
-import 'package:hackathon/themes/app_constants.dart';
+import 'package:hackathon/view/home/widgets/chart_card.dart';
 
 class HeartRateLineChart extends StatelessWidget {
   const HeartRateLineChart(
@@ -27,8 +27,17 @@ class HeartRateLineChart extends StatelessWidget {
         FlSpot(i.toDouble(), (last[i].maxHeartRateBpm ?? 0).toDouble())
     ];
 
-    return _ChartCard(
+    // Compute subtitle: average of average HR across shown points
+    final double avgAvgHr = last.isEmpty
+        ? 0
+        : last
+                .map((a) => (a.averageHeartRateBpm ?? 0).toDouble())
+                .fold<double>(0, (p, e) => p + e) /
+            last.length;
+
+    return ChartCard(
       title: 'Heart rate (avg & max bpm)',
+      subtitle: 'Average: ${avgAvgHr.toStringAsFixed(0)} bpm',
       child: LineChart(
         LineChartData(
           gridData: const FlGridData(show: false),
@@ -70,29 +79,6 @@ class HeartRateLineChart extends StatelessWidget {
               barWidth: 3,
               dotData: const FlDotData(show: false),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ChartCard extends StatelessWidget {
-  const _ChartCard({required this.title, required this.child});
-  final String title;
-  final Widget child;
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(Spacings.m),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: theme.textTheme.titleMedium),
-            const SizedBox(height: Spacings.s),
-            SizedBox(height: 200, child: child),
           ],
         ),
       ),
