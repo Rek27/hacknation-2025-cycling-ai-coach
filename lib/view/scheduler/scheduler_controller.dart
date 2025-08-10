@@ -108,8 +108,7 @@ class SchedulerController extends ChangeNotifier {
   Future<void> loadForRange(DateTimeRange range) async {
     isLoading = true;
     try {
-      final List<CalendarEvent> newEvents =
-          await buildEventsForRange(range);
+      final List<CalendarEvent> newEvents = await buildEventsForRange(range);
       events.clearEvents();
       events.addEvents(newEvents);
       lastSignature = eventsSignature(newEvents);

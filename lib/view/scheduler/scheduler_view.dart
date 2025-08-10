@@ -22,7 +22,6 @@ class _SchedulerViewState extends State<SchedulerView> {
   SchedulerController? _controllerRef;
   bool _startedPolling = false;
 
-
   @override
   void initState() {
     super.initState();
@@ -31,8 +30,7 @@ class _SchedulerViewState extends State<SchedulerView> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _controllerRef ??=
-        Provider.of<SchedulerController>(context, listen: false);
+    _controllerRef ??= Provider.of<SchedulerController>(context, listen: false);
     if (!_startedPolling && _controllerRef != null) {
       _startedPolling = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -126,7 +124,8 @@ class _SchedulerViewState extends State<SchedulerView> {
                           ),
                         );
                         // Ensure server-generated IDs are reflected
-                        final range = controller.calendar.visibleDateTimeRange.value;
+                        final range =
+                            controller.calendar.visibleDateTimeRange.value;
                         controller.loadForRange(range);
                       }
                     }();
@@ -149,7 +148,8 @@ class _SchedulerViewState extends State<SchedulerView> {
                           ),
                         );
                         // Ensure server-generated IDs are reflected
-                        final range = controller.calendar.visibleDateTimeRange.value;
+                        final range =
+                            controller.calendar.visibleDateTimeRange.value;
                         controller.loadForRange(range);
                       }
                     }();
@@ -286,7 +286,8 @@ class _SchedulerViewState extends State<SchedulerView> {
     final saved = await _openEditOrCreateDialog(original, isCreate: false);
     if (saved != null) {
       // Refresh visible range so changes propagate reliably on web
-      final controller = Provider.of<SchedulerController>(context, listen: false);
+      final controller =
+          Provider.of<SchedulerController>(context, listen: false);
       final range = controller.calendar.visibleDateTimeRange.value;
       controller.loadForRange(range);
     }
@@ -354,49 +355,50 @@ class _SchedulerViewState extends State<SchedulerView> {
                 width: dialogWidth,
                 child: SingleChildScrollView(
                   child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: titleCtrl,
-                      decoration: const InputDecoration(labelText: 'Title'),
-                    ),
-                    const SizedBox(height: Spacings.m),
-                    TextField(
-                      controller: descCtrl,
-                      decoration: const InputDecoration(
-                          labelText: 'Description', alignLabelWithHint: true),
-                      maxLines: 3,
-                      textAlign: TextAlign.start,
-                    ),
-                    const SizedBox(height: Spacings.m),
-                    DropdownButtonFormField<ScheduleType>(
-                      value: selectedType,
-                      decoration: const InputDecoration(labelText: 'Category'),
-                      items: ScheduleType.values
-                          .map((s) => DropdownMenuItem(
-                              value: s, child: Text(scheduleTypeToString(s))))
-                          .toList(),
-                      onChanged: (v) => setInner(() {
-                        if (v != null) selectedType = v;
-                      }),
-                    ),
-                    const SizedBox(height: Spacings.m),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Start'),
-                      subtitle: Text(controller.formatDT(context, startAt)),
-                      trailing: const Icon(Icons.edit_calendar),
-                      onTap: pickStart,
-                    ),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('End'),
-                      subtitle: Text(controller.formatDT(context, endAt)),
-                      trailing: const Icon(Icons.edit_calendar),
-                      onTap: pickEnd,
-                    ),
-                  ],
-                ),
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        controller: titleCtrl,
+                        decoration: const InputDecoration(labelText: 'Title'),
+                      ),
+                      const SizedBox(height: Spacings.m),
+                      TextField(
+                        controller: descCtrl,
+                        decoration: const InputDecoration(
+                            labelText: 'Description', alignLabelWithHint: true),
+                        maxLines: 3,
+                        textAlign: TextAlign.start,
+                      ),
+                      const SizedBox(height: Spacings.m),
+                      DropdownButtonFormField<ScheduleType>(
+                        value: selectedType,
+                        decoration:
+                            const InputDecoration(labelText: 'Category'),
+                        items: ScheduleType.values
+                            .map((s) => DropdownMenuItem(
+                                value: s, child: Text(scheduleTypeToString(s))))
+                            .toList(),
+                        onChanged: (v) => setInner(() {
+                          if (v != null) selectedType = v;
+                        }),
+                      ),
+                      const SizedBox(height: Spacings.m),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Start'),
+                        subtitle: Text(controller.formatDT(context, startAt)),
+                        trailing: const Icon(Icons.edit_calendar),
+                        onTap: pickStart,
+                      ),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('End'),
+                        subtitle: Text(controller.formatDT(context, endAt)),
+                        trailing: const Icon(Icons.edit_calendar),
+                        onTap: pickEnd,
+                      ),
+                    ],
+                  ),
                 ),
               ),
               actions: [
@@ -471,15 +473,19 @@ class _SchedulerViewState extends State<SchedulerView> {
                 const SizedBox(height: Spacings.s),
                 Text('Distance: ${activity.distanceKm.toStringAsFixed(1)} km',
                     style: theme.textTheme.bodyMedium),
-                Text('Avg speed: ${activity.averageSpeedKmh.toStringAsFixed(1)} km/h',
+                Text(
+                    'Avg speed: ${activity.averageSpeedKmh.toStringAsFixed(1)} km/h',
                     style: theme.textTheme.bodyMedium),
-                Text('Energy: ${activity.activeEnergyKcal.toStringAsFixed(0)} kcal',
+                Text(
+                    'Energy: ${activity.activeEnergyKcal.toStringAsFixed(0)} kcal',
                     style: theme.textTheme.bodyMedium),
                 if (activity.averageHeartRateBpm != null)
-                  Text('Avg HR: ${activity.averageHeartRateBpm!.toStringAsFixed(0)} bpm',
+                  Text(
+                      'Avg HR: ${activity.averageHeartRateBpm!.toStringAsFixed(0)} bpm',
                       style: theme.textTheme.bodyMedium),
                 if (activity.maxHeartRateBpm != null)
-                  Text('Max HR: ${activity.maxHeartRateBpm!.toStringAsFixed(0)} bpm',
+                  Text(
+                      'Max HR: ${activity.maxHeartRateBpm!.toStringAsFixed(0)} bpm',
                       style: theme.textTheme.bodyMedium),
               ],
             ),
