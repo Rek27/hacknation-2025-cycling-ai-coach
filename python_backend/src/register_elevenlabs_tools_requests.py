@@ -292,6 +292,53 @@ def build_tools(base_url: str) -> List[Dict[str, Any]]:
             },
             "response_timeout_secs": 20,
         },
+        {
+            "type": "webhook",
+            "name": "weather-by-time",
+            "description": "Get hourly weather for a location at a specific time using Open-Meteo. Returns: { time, latitude, longitude, values{...} }.",
+            "api_schema": {
+                "url": f"{base}/weather/by_time",
+                "method": "GET",
+                "query_params_schema": _props([
+                    {"name": "lat", "type": "number", "description": "Latitude in decimal degrees"},
+                    {"name": "lon", "type": "number", "description": "Longitude in decimal degrees"},
+                    {"name": "datetimeIso", "type": "string", "description": "Target time (ISO-8601, e.g. 2025-08-10T09:00:00Z)"},
+                    {"name": "variables", "type": "string", "description": "Optional CSV of variables: temperature_2m,windspeed_10m,winddirection_10m,precipitation,cloudcover"},
+                ]),
+            },
+            "response_timeout_secs": 20,
+        },
+        {
+            "type": "webhook",
+            "name": "daylight-by-date",
+            "description": "Get sunrise/sunset for a date at a location using sunrise-sunset.org. Returns: { sunrise, sunset, day_length, ... }.",
+            "api_schema": {
+                "url": f"{base}/weather/daylight",
+                "method": "GET",
+                "query_params_schema": _props([
+                    {"name": "lat", "type": "number", "description": "Latitude in decimal degrees"},
+                    {"name": "lon", "type": "number", "description": "Longitude in decimal degrees"},
+                    {"name": "dateIso", "type": "string", "description": "Date YYYY-MM-DD (UTC). Optional (defaults to today)."},
+                ]),
+            },
+            "response_timeout_secs": 20,
+        },
+        {
+            "type": "webhook",
+            "name": "air-quality",
+            "description": "Get latest air quality measurements near a location using OpenAQ. Returns: { pollutants: { pm25, pm10, no2, ... } }.",
+            "api_schema": {
+                "url": f"{base}/weather/air_quality",
+                "method": "GET",
+                "query_params_schema": _props([
+                    {"name": "lat", "type": "number", "description": "Latitude in decimal degrees"},
+                    {"name": "lon", "type": "number", "description": "Longitude in decimal degrees"},
+                    {"name": "radius_m", "type": "integer", "description": "Search radius in meters (default 10000)"},
+                    {"name": "limit", "type": "integer", "description": "Max stations to include (default 10)"},
+                ]),
+            },
+            "response_timeout_secs": 20,
+        },
     ]
 
 

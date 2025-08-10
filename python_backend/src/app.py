@@ -3,6 +3,7 @@ from src.api.routers import health
 from src.api.routers import stats
 from src.api.routers import schedule
 from src.api.routers import memory
+from src.api.routers import weather
 from mcp.server.fastmcp import FastMCP
 from src.api.routers.mcp_server import register_tools
 
@@ -13,6 +14,7 @@ def app() -> FastAPI:
     project.include_router(stats.router)
     project.include_router(schedule.router)
     project.include_router(memory.router)
+    project.include_router(weather.router)
 
     # Register MCP tools and mount the MCP HTTP app (exposes OpenAPI) at /mcp.
     # Also mount SSE app at /mcp/sse for event streaming if needed.
