@@ -92,7 +92,7 @@ class _HomeViewState extends State<HomeView> {
                 SpeedLineChart(activities: controller.last90DayCycling),
                 SizedBox(height: Spacings.l),
                 EnergyBarChart(activities: controller.last90DayCycling),
-                SizedBox(height: Spacings.xl),
+                SizedBox(height: Spacings.l),
                 HeartRateLineChart(activities: controller.last90DayCycling),
                 const SizedBox(height: 120),
               ],

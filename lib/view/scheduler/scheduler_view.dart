@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hackathon/themes/app_constants.dart';
 import 'package:hackathon/view/home/widgets/ai_chat.dart';
@@ -18,10 +19,9 @@ class SchedulerView extends StatefulWidget {
 }
 
 class _SchedulerViewState extends State<SchedulerView> {
-  final DefaultEventsController _events = DefaultEventsController();
-  final CalendarController _calendar = CalendarController();
+  SchedulerController? _controllerRef;
+  bool _startedPolling = false;
 
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -29,9 +29,23 @@ class _SchedulerViewState extends State<SchedulerView> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _controllerRef ??=
+        Provider.of<SchedulerController>(context, listen: false);
+    if (!_startedPolling && _controllerRef != null) {
+      _startedPolling = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _controllerRef!.startPolling();
+        _controllerRef!.pollOnce();
+      });
+    }
+  }
+
+  @override
   void dispose() {
-    _events.dispose();
-    _calendar.dispose();
+    _controllerRef?.stopPolling();
     super.dispose();
   }
 
@@ -47,16 +61,14 @@ class _SchedulerViewState extends State<SchedulerView> {
             tooltip: 'Sync data',
             onPressed: () async {
               // Initial load for current week.
-              setState(() => _isLoading = true);
               final now = DateTime.now();
               final start = controller.startOfWeek(now);
-              await _loadForRange(
+              await controller.loadForRange(
                 DateTimeRange(
                   start: start,
                   end: start.add(const Duration(days: 7)),
                 ),
               );
-              setState(() => _isLoading = false);
             },
           ),
         ],
@@ -67,8 +79,8 @@ class _SchedulerViewState extends State<SchedulerView> {
           child: Stack(
             children: [
               CalendarView(
-                eventsController: _events,
-                calendarController: _calendar,
+                eventsController: controller.events,
+                calendarController: controller.calendar,
                 viewConfiguration:
                     MultiDayViewConfiguration.custom(numberOfDays: 3),
                 header: CalendarHeader(
@@ -89,7 +101,7 @@ class _SchedulerViewState extends State<SchedulerView> {
                 // Calendar behavior hooks (paging, taps, create, drag/resize).
                 callbacks: CalendarCallbacks(
                   // When the visible page (week) changes, reload from DB.
-                  onPageChanged: (visible) => _loadForRange(visible),
+                  onPageChanged: (visible) => controller.loadForRange(visible),
                   // Tap on empty space → create 60-min draft and open form.
                   onTapped: (dateTime) {
                     () async {
@@ -100,13 +112,13 @@ class _SchedulerViewState extends State<SchedulerView> {
                             end: start.add(const Duration(hours: 1))),
                         data: null,
                       );
-                      _events.addEvent(draft);
+                      controller.events.addEvent(draft);
                       final saved =
                           await _openCreateDialog(draft.dateTimeRange);
                       if (saved == null) {
-                        _events.removeEvent(draft);
+                        controller.events.removeEvent(draft);
                       } else {
-                        _events.updateEvent(
+                        controller.events.updateEvent(
                           event: draft,
                           updatedEvent: draft.copyWith(
                             dateTimeRange: DateTimeRange(
@@ -114,8 +126,8 @@ class _SchedulerViewState extends State<SchedulerView> {
                           ),
                         );
                         // Ensure server-generated IDs are reflected
-                        final range = _calendar.visibleDateTimeRange.value;
-                        _loadForRange(range);
+                        final range = controller.calendar.visibleDateTimeRange.value;
+                        controller.loadForRange(range);
                       }
                     }();
                   },
@@ -126,9 +138,9 @@ class _SchedulerViewState extends State<SchedulerView> {
                       final saved =
                           await _openCreateDialog(event.dateTimeRange);
                       if (saved == null) {
-                        _events.removeEvent(event);
+                        controller.events.removeEvent(event);
                       } else {
-                        _events.updateEvent(
+                        controller.events.updateEvent(
                           event: event,
                           updatedEvent: event.copyWith(
                             data: saved,
@@ -137,19 +149,19 @@ class _SchedulerViewState extends State<SchedulerView> {
                           ),
                         );
                         // Ensure server-generated IDs are reflected
-                        final range = _calendar.visibleDateTimeRange.value;
-                        _loadForRange(range);
+                        final range = controller.calendar.visibleDateTimeRange.value;
+                        controller.loadForRange(range);
                       }
                     }();
                   },
-                  // Tap event → open edit.
-                  onEventTapped: (event, renderBox) {
-                    () async {
-                      final data = event.data;
-                      if (data is ScheduleInterval) {
-                        await _openEditDialog(data);
-                      }
-                    }();
+                  // Tap event → open edit/details.
+                  onEventTapped: (event, renderBox) async {
+                    final data = event.data;
+                    if (data is ScheduleInterval) {
+                      await _openEditDialog(data);
+                    } else if (data is CyclingActivity) {
+                      await _openActivityDialog(data);
+                    }
                   },
                   // Drag/resize → persist; rollback on failure.
                   onEventChanged: (previous, updated) {
@@ -162,7 +174,7 @@ class _SchedulerViewState extends State<SchedulerView> {
                       if (s.id == null || s.id!.isEmpty) {
                         _showError(
                             'Event is syncing. Please try again shortly.');
-                        _events.updateEvent(
+                        controller.events.updateEvent(
                             event: updated, updatedEvent: previous);
                         return;
                       }
@@ -181,13 +193,13 @@ class _SchedulerViewState extends State<SchedulerView> {
                         await Provider.of<SchedulerController>(context,
                                 listen: false)
                             .updateInterval(updatedInterval);
-                        _events.updateEvent(
+                        controller.events.updateEvent(
                           event: updated,
                           updatedEvent: updated.copyWith(data: updatedInterval),
                         );
                       } catch (e) {
                         _showError('Failed to update interval: $e');
-                        _events.updateEvent(
+                        controller.events.updateEvent(
                             event: updated,
                             updatedEvent: previous); // rollback visuals
                       }
@@ -195,7 +207,7 @@ class _SchedulerViewState extends State<SchedulerView> {
                   },
                 ),
               ),
-              if (_isLoading)
+              if (controller.isLoading)
                 Positioned.fill(
                   child: AbsorbPointer(
                     child: Container(
@@ -225,7 +237,7 @@ class _SchedulerViewState extends State<SchedulerView> {
   }
 
   Widget _eventTile(CalendarEvent event, DateTimeRange tileRange) {
-    final controller = Provider.of<SchedulerController>(context);
+    final controller = Provider.of<SchedulerController>(context, listen: false);
     final s =
         event.data is ScheduleInterval ? event.data as ScheduleInterval : null;
     final a =
@@ -258,21 +270,6 @@ class _SchedulerViewState extends State<SchedulerView> {
     );
   }
 
-  Future<void> _loadForRange(DateTimeRange range) async {
-    setState(() => _isLoading = true);
-    try {
-      final events =
-          await Provider.of<SchedulerController>(context, listen: false)
-              .buildEventsForRange(range);
-      _events.clearEvents();
-      _events.addEvents(events);
-    } catch (e) {
-      _showError('Failed to load: $e');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
   Future<ScheduleInterval?> _openCreateDialog(DateTimeRange slot) async {
     final ScheduleInterval draft = ScheduleInterval(
       userId: '00000000-0000-0000-0000-000000000000',
@@ -289,8 +286,9 @@ class _SchedulerViewState extends State<SchedulerView> {
     final saved = await _openEditOrCreateDialog(original, isCreate: false);
     if (saved != null) {
       // Refresh visible range so changes propagate reliably on web
-      final range = _calendar.visibleDateTimeRange.value;
-      _loadForRange(range);
+      final controller = Provider.of<SchedulerController>(context, listen: false);
+      final range = controller.calendar.visibleDateTimeRange.value;
+      controller.loadForRange(range);
     }
   }
 
@@ -298,12 +296,14 @@ class _SchedulerViewState extends State<SchedulerView> {
     ScheduleInterval base, {
     required bool isCreate,
   }) async {
+    final double dialogWidth =
+        (MediaQuery.of(context).size.width * 0.9).clamp(360.0, 520.0);
     final titleCtrl = TextEditingController(text: base.title ?? '');
     final descCtrl = TextEditingController(text: base.description ?? '');
     ScheduleType selectedType = base.type;
     DateTime startAt = base.start;
     DateTime endAt = base.end;
-    final controller = Provider.of<SchedulerController>(context);
+    final controller = Provider.of<SchedulerController>(context, listen: false);
 
     final bool? saved = await showDialog<bool>(
       context: context,
@@ -350,8 +350,10 @@ class _SchedulerViewState extends State<SchedulerView> {
 
             return AlertDialog(
               title: Text(isCreate ? 'Create interval' : 'Edit interval'),
-              content: SingleChildScrollView(
-                child: Column(
+              content: SizedBox(
+                width: dialogWidth,
+                child: SingleChildScrollView(
+                  child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     TextField(
@@ -394,6 +396,7 @@ class _SchedulerViewState extends State<SchedulerView> {
                       onTap: pickEnd,
                     ),
                   ],
+                ),
                 ),
               ),
               actions: [
@@ -445,6 +448,51 @@ class _SchedulerViewState extends State<SchedulerView> {
     );
 
     return saved == true ? base : null;
+  }
+
+  Future<void> _openActivityDialog(CyclingActivity activity) async {
+    if (!mounted) return;
+    final double dialogWidth =
+        (MediaQuery.of(context).size.width * 0.9).clamp(360.0, 520.0);
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        final theme = Theme.of(context);
+        return AlertDialog(
+          title: const Text('Cycling'),
+          content: SizedBox(
+            width: dialogWidth,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Start: ${activity.startTime}'),
+                Text('End:   ${activity.endTime}'),
+                const SizedBox(height: Spacings.s),
+                Text('Distance: ${activity.distanceKm.toStringAsFixed(1)} km',
+                    style: theme.textTheme.bodyMedium),
+                Text('Avg speed: ${activity.averageSpeedKmh.toStringAsFixed(1)} km/h',
+                    style: theme.textTheme.bodyMedium),
+                Text('Energy: ${activity.activeEnergyKcal.toStringAsFixed(0)} kcal',
+                    style: theme.textTheme.bodyMedium),
+                if (activity.averageHeartRateBpm != null)
+                  Text('Avg HR: ${activity.averageHeartRateBpm!.toStringAsFixed(0)} bpm',
+                      style: theme.textTheme.bodyMedium),
+                if (activity.maxHeartRateBpm != null)
+                  Text('Max HR: ${activity.maxHeartRateBpm!.toStringAsFixed(0)} bpm',
+                      style: theme.textTheme.bodyMedium),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _showError(String message) {

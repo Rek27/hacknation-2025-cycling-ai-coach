@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:kalender/kalender.dart';
 import 'package:hackathon/model/cycling_activity.dart';
@@ -12,6 +14,12 @@ import 'package:hackathon/dto/cycling_activity_dto.dart';
 /// It also handles the persistence of the schedule intervals and cycling activities.
 class SchedulerController extends ChangeNotifier {
   final List<CyclingActivity> activities = [];
+  final DefaultEventsController events = DefaultEventsController();
+  final CalendarController calendar = CalendarController();
+
+  bool isLoading = false;
+  Timer? pollTimer;
+  String? lastSignature;
 
   /// Returns the start of the week for a given date.
   ///
@@ -92,6 +100,83 @@ class SchedulerController extends ChangeNotifier {
       dateTimeRange: DateTimeRange(start: startUtc, end: endUtc),
       data: a,
     );
+  }
+
+  /// Loads the events for a given date range.
+  ///
+  /// The events are loaded from the database and added to the events controller.
+  Future<void> loadForRange(DateTimeRange range) async {
+    isLoading = true;
+    try {
+      final List<CalendarEvent> newEvents =
+          await buildEventsForRange(range);
+      events.clearEvents();
+      events.addEvents(newEvents);
+      lastSignature = eventsSignature(newEvents);
+    } catch (e) {
+      print('Failed to load: $e');
+    } finally {
+      isLoading = false;
+    }
+    notifyListeners();
+  }
+
+  /// Starts the polling of the events.
+  ///
+  /// The events are polled every 2 seconds.
+  void startPolling() {
+    pollTimer?.cancel();
+    pollTimer = Timer.periodic(const Duration(seconds: 2), (_) => pollOnce());
+  }
+
+  /// Stops the polling of the events.
+  ///
+  /// The events are not polled anymore.
+  void stopPolling() {
+    pollTimer?.cancel();
+  }
+
+  /// Polls the events once.
+  ///
+  /// The events are polled once.
+  Future<void> pollOnce() async {
+    try {
+      final visible = calendar.visibleDateTimeRange.value;
+      final newEvents = await buildEventsForRange(visible);
+      final sig = eventsSignature(newEvents);
+      if (sig != lastSignature) {
+        events.clearEvents();
+        events.addEvents(newEvents);
+        lastSignature = sig;
+      }
+    } catch (_) {
+      // ignore transient polling errors
+    }
+  }
+
+  /// Returns the signature of the events.
+  ///
+  /// The signature is a string that is used to identify the events.
+  String eventsSignature(List<CalendarEvent> events) {
+    final List<String> keys = events.map((e) {
+      final start = e.dateTimeRange.start.toUtc().toIso8601String();
+      final end = e.dateTimeRange.end.toUtc().toIso8601String();
+      String tag;
+      final data = e.data;
+      if (data is ScheduleInterval) {
+        final id = data.id ?? '';
+        final t = scheduleTypeToString(data.type);
+        final title = (data.title ?? '').trim();
+        tag = 'S:$id:$t:$title';
+      } else if (data is CyclingActivity) {
+        tag = 'C';
+      } else {
+        tag = 'U';
+      }
+      return '$start|$end|$tag';
+    }).toList()
+      ..sort();
+    return keys.join('~');
   }
 
   /// Returns the background color for a given schedule type.
