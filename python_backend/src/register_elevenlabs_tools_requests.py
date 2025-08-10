@@ -2,8 +2,7 @@
 Register backend webhook tools with ElevenLabs using raw HTTP (requests).
 
 Usage:
-  - Set XI_API_KEY (or ELEVENLABS_API_KEY) env var with your ElevenLabs key
-  - Optionally set BACKEND_BASE_URL (defaults to http://localhost:8001)
+  - Set ELEVENLABS_API_KEY env var with your ElevenLabs key
   - Run: python -m src.register_elevenlabs_tools_requests
 """
 

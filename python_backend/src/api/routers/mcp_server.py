@@ -9,6 +9,7 @@ try:
 except Exception:
     create_client = None  # type: ignore
 
+########### DOESNT WORK, ELEVENLABS SAYS TO USE HTTPS BUT I AM USING HTTPS, stopped developing it ################
 
 def _get_supabase_client():
     if create_client is None:

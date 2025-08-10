@@ -1,7 +1,18 @@
+/// DTO helpers for cycling activities via Supabase RPC.
+///
+/// Provides static functions to load and insert activity rows by calling
+/// Postgres functions exposed through Supabase.
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hackathon/model/cycling_activity.dart';
 
 class CyclingActivityDto {
+  /// Load activities in a date window, optionally scoped to a user.
+  ///
+  /// - start/end: ISO timestamps (inclusive start, exclusive end recommended upstream)
+  /// - userId: optional Supabase user UUID; when null, loads all users
+  /// - limit/offset: pagination controls applied at the SQL layer
+  ///
+  /// Returns a list of typed `CyclingActivity` models.
   static Future<List<CyclingActivity>> loadActivities({
     required DateTime start,
     required DateTime end,
@@ -31,6 +42,10 @@ class CyclingActivityDto {
         .toList(growable: false);
   }
 
+  /// Insert a single activity row via `insert_cycling_activity`.
+  ///
+  /// Returns the new activity id (uuid) as a string, or null if the RPC
+  /// returned no value.
   static Future<String?> insertActivity({
     required String userId,
     required CyclingActivity activity,

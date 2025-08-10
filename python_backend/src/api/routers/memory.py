@@ -8,10 +8,7 @@ from fastapi import APIRouter, HTTPException, status, Depends, Request, Body, Qu
 from pydantic import BaseModel, Field, ConfigDict, constr, ValidationError
 import json
 
-try:
-    from supabase import create_client
-except ImportError:
-    create_client = None  # type: ignore
+from src.services.supabase_service import get_client_anon
 
 router = APIRouter(prefix="/memories", tags=["Memories"])
 FIXED_USER_ID = UUID("00000000-0000-0000-0000-000000000000")
@@ -23,16 +20,15 @@ class CreateMemoryRequest(BaseModel):
     title: Optional[str] = None
 
 def _get_supabase_client():
-    if create_client is None:
-        raise HTTPException(500, "Supabase client not installed")
-    url = os.environ.get("SUPABASE_URL")
-    key = os.environ.get("SUPABASE_ANON_KEY")
-    if not url or not key:
-        raise HTTPException(500, "Supabase credentials not configured")
-    return create_client(url, key)
+    return get_client_anon()
 
 @router.post("", status_code=status.HTTP_200_OK)
 async def create_memory(request: Request, client = Depends(_get_supabase_client)):
+    """Create a user memory using JSON body (userId, content, optional title).
+
+    Accepts either a plain JSON object or a wrapped payload {"body": {...}} as sent by some tools.
+    Returns the UUID of the new memory.
+    """
     raw = await request.body()                               # <- await
     try:
         payload = json.loads(raw or b"{}")
@@ -77,6 +73,10 @@ def delete_memory(
     user_id: str = Query(..., alias="userId", description="User UUID"),
     client = Depends(_get_supabase_client),
 ):
+    """Delete a memory by id for a given user. Returns the deleted id.
+
+    Accepts query parameters: id (UUID) and userId (UUID).
+    """
     try:
         p_id = str(UUID(memory_id))
     except Exception:
@@ -111,6 +111,7 @@ def list_memories(
     offset: int = Query(0, ge=0),
     client = Depends(_get_supabase_client),
 ) -> Dict[str, Any]:
+    """List memories for a user (newest first) with pagination via limit/offset."""
     try:
         p_user_id = str(UUID(user_id))
     except Exception:
