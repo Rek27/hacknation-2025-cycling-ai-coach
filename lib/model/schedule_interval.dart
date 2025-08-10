@@ -20,11 +20,11 @@ ScheduleType scheduleTypeFromString(String s) {
 class ScheduleInterval {
   final String? id;        // <- optional for “create”
   final String userId;
-  final ScheduleType type;
-  final DateTime start;    // tz-aware ISO-8601
-  final DateTime end;
-  final String? title;
-  final String? description;
+  ScheduleType type;
+  DateTime start;    // tz-aware ISO-8601
+  DateTime end;
+  String? title;
+  String? description;
 
   ScheduleInterval({
     this.id,

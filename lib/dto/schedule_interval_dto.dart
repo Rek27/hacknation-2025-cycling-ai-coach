@@ -44,4 +44,30 @@ abstract class ScheduleIntervalDto {
     final rows = (data as List).cast<Map<String, dynamic>>();
     return rows.map(ScheduleInterval.fromJson).toList();
   }
+
+
+
+  static Future<ScheduleInterval> updateInterval(ScheduleInterval interval) async {
+    final supabase = Supabase.instance.client;
+
+    if (interval.id == null || interval.id!.isEmpty) {
+      throw ArgumentError('ScheduleInterval.id must be set for updates.');
+    }
+
+    final params = <String, dynamic>{
+      'p_id': interval.id,                                  // identify row
+      'p_new_start': interval.start.toIso8601String(),      // update to these values
+      'p_new_end': interval.end.toIso8601String(),
+      'p_type': scheduleTypeToString(interval.type),
+      'p_title': interval.title,
+      'p_description': interval.description,
+    };
+
+    final data = await supabase.rpc<dynamic>('update_schedule_interval_by_id', params: params);
+    final rows = (data as List).cast<Map<String, dynamic>>();
+    if (rows.isEmpty) {
+      throw StateError('Update returned no rows (id not found?).');
+    }
+    return ScheduleInterval.fromJson(rows.first);
+  }
 }
