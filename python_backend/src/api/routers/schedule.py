@@ -3,7 +3,8 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, status, Request, Depends
+import json
 
 try:
     from supabase import create_client
@@ -79,28 +80,49 @@ def list_intervals(
 
 
 @router.post("/intervals", status_code=status.HTTP_200_OK)
-def create_interval(payload: Dict[str, Any]) -> Dict[str, Any]:
-    client = _get_supabase_client()
+async def create_interval(
+    request: Request,
+    client = Depends(_get_supabase_client),
+) -> Dict[str, Any]:
+    """Create a schedule interval accepting JSON body or query params."""
+
+    # Parse JSON body if present (tolerate empty/invalid by falling back to query)
+    body: Dict[str, Any] = {}
+    try:
+        raw = await request.body()
+        if raw:
+            body_obj = json.loads(raw)
+            if isinstance(body_obj, dict):
+                body = body_obj.get("body") if isinstance(body_obj.get("body"), dict) else body_obj
+    except Exception:
+        body = {}
+
+    qp = request.query_params
+
+    user_id_raw = body.get("userId") or body.get("user_id") or qp.get("userId")
+    type_str = body.get("type") or qp.get("type")
+    start_iso = body.get("startIso") or body.get("startDateIso") or qp.get("startDateIso") or qp.get("startIso")
+    end_iso = body.get("endIso") or body.get("endDateIso") or qp.get("endDateIso") or qp.get("endIso")
+    title = body.get("title") or qp.get("title")
+    description = body.get("description") or qp.get("description")
 
     # Required fields
-    user_id = payload.get("userId")
-    type_str = payload.get("type")
-    start_iso = payload.get("startIso")
-    end_iso = payload.get("endIso")
-
-    if not user_id or not type_str or not start_iso or not end_iso:
-        raise HTTPException(status_code=400, detail="userId, type, startIso, endIso are required")
+    if not user_id_raw:
+        raise HTTPException(status_code=400, detail="userId is required")
+    if not type_str:
+        raise HTTPException(status_code=400, detail="type is required")
+    if not start_iso:
+        raise HTTPException(status_code=400, detail="startIso/startDateIso is required")
+    if not end_iso:
+        raise HTTPException(status_code=400, detail="endIso/endDateIso is required")
 
     # Validate UUID and enum
-    p_user_uuid = _parse_uuid(user_id)
+    p_user_uuid = _parse_uuid(user_id_raw)
     try:
         stype = ScheduleType(type_str)
     except Exception:
         valid = [e.value for e in ScheduleType]
         raise HTTPException(status_code=400, detail=f"Invalid type '{type_str}'. Must be one of {valid}")
-
-    title = payload.get("title")
-    description = payload.get("description")
 
     res = client.rpc(
         "create_schedule_interval",
@@ -121,7 +143,6 @@ def create_interval(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     new_id = data
     try:
-        # Ensure it's a UUID string
         new_id = str(UUID(str(data)))
     except Exception:
         pass

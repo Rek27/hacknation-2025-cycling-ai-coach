@@ -173,7 +173,7 @@ def build_tools(base_url: str) -> List[Dict[str, Any]]:
         },
         {
             "type": "webhook",
-            "name": "schedule-list",
+            "name": "list-schedule-intervals",
             "description": "List schedule intervals overlapping a date window. Returns: { intervals: [interval…] } where interval matches the schedule_intervals table (id, user_id, type, start_at, end_at, title, description, created_at, updated_at).",
             "api_schema": {
                 "url": f"{base}/schedule/intervals",
@@ -189,7 +189,7 @@ def build_tools(base_url: str) -> List[Dict[str, Any]]:
         },
         {
             "type": "webhook",
-            "name": "schedule-create",
+            "name": "create-schedule-interval",
             "description": "Create a schedule interval (snapped to 15 minutes). Returns: { id } for the new interval.",
             "api_schema": {
                 "url": f"{base}/schedule/intervals",
@@ -201,8 +201,8 @@ def build_tools(base_url: str) -> List[Dict[str, Any]]:
                         "type": {"type": "string", "description": "One of Cycling, Work, Other"},
                         "startIso": {"type": "string", "description": "ISO-8601 UTC start"},
                         "endIso": {"type": "string", "description": "ISO-8601 UTC end (exclusive)"},
-                        "title": {"type": "string", "description": "Optional title", "nullable": True},
-                        "description": {"type": "string", "description": "Optional description", "nullable": True},
+                        "title": {"type": "string", "description": "Title (required)"},
+                        "description": {"type": "string", "description": "Description (required)"},
                     },
                     "required": ["userId", "type", "startIso", "endIso"],
                 },
@@ -211,7 +211,7 @@ def build_tools(base_url: str) -> List[Dict[str, Any]]:
         },
         {
             "type": "webhook",
-            "name": "schedule-update",
+            "name": "update-schedule-interval",
             "description": "Update a schedule interval by id with optional fields. Returns: { interval } with the updated interval.",
             "api_schema": {
                 "url": f"{base}/schedule/intervals",
@@ -234,13 +234,46 @@ def build_tools(base_url: str) -> List[Dict[str, Any]]:
         },
         {
             "type": "webhook",
-            "name": "schedule-delete",
+            "name": "delete-schedule-interval",
             "description": "Delete a schedule interval by id. Returns: { id } of the deleted interval.",
             "api_schema": {
                 "url": f"{base}/schedule/intervals",
                 "method": "DELETE",
                 "query_params_schema": _props([
                     {"name": "id", "type": "string", "description": "Interval UUID to delete"},
+                ]),
+            },
+            "response_timeout_secs": 20,
+        },
+        {
+            "type": "webhook",
+            "name": "memory-create",
+            "description": "Create a user memory entry. Returns: { id } of the new memory.",
+            "api_schema": {
+                "url": f"{base}/memories",
+                "method": "POST",
+                "request_body_schema": {
+                    "type": "object",
+                    "properties": {
+                        "userId": {"type": "string", "description": "User UUID (Supabase user id)"},
+                        "content": {"type": "string", "description": "Memory content"},
+                        "title": {"type": "string", "description": "Optional title", "nullable": True},
+                    },
+                    "required": ["userId", "content"]
+                }
+            },
+            "response_timeout_secs": 20,
+        },
+        {
+            "type": "webhook",
+            "name": "memory-delete",
+            "description": "Delete a user memory entry by id. Returns: { id } of the deleted memory.",
+            "api_schema": {
+                "url": f"{base}/memories",
+                "method": "DELETE",
+                "query_params_schema": _props([
+                    {"name": "id", "type": "string", "description": "Memory UUID to delete"},
+                    {"name": "userId", "type": "string", "description": "Optional user UUID to enforce ownership"},
                 ]),
             },
             "response_timeout_secs": 20,
@@ -254,7 +287,7 @@ def main() -> None:
     if not api_key:
         raise RuntimeError("Set XI_API_KEY or ELEVENLABS_API_KEY in environment")
 
-    base_url = os.environ.get("BACKEND_BASE_URL", "https://483183052fb3.ngrok-free.app")
+    base_url = os.environ.get("BACKEND_BASE_URL", "https://9eb277142d3e.ngrok-free.app")
     url = "https://api.elevenlabs.io/v1/convai/tools"
     headers = {"xi-api-key": api_key, "Content-Type": "application/json"}
     update_only = os.environ.get("XI_UPDATE_ONLY", "false").lower() in ("1", "true", "yes")

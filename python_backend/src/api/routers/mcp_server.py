@@ -85,3 +85,34 @@ def register_tools(mcp: FastMCP) -> None:
             raise HTTPException(status_code=500, detail=str(err))
         return {"rides": data or []}
 
+    @mcp.tool()
+    async def create_user_memory(user_id: str, content: str, title: Optional[str] = None) -> Dict[str, Any]:
+        """Create a memory row and return its id."""
+        client = _get_supabase_client()
+        res = client.rpc(
+            "create_user_memory",
+            {"p_user_id": user_id, "p_title": title, "p_content": content},
+        ).execute()
+        data = getattr(res, "data", None)
+        err = getattr(res, "error", None)
+        if err:
+            raise HTTPException(status_code=500, detail=str(err))
+        return {"id": data}
+
+    @mcp.tool()
+    async def delete_user_memory(id: str, user_id: Optional[str] = None) -> Dict[str, Any]:
+        """Delete a memory row by id. Optionally enforce owner."""
+        client = _get_supabase_client()
+        payload: Dict[str, Any] = {"p_id": id}
+        if user_id is not None:
+            payload["p_user_id"] = user_id
+        res = client.rpc(
+            "delete_user_memory",
+            payload,
+        ).execute()
+        data = getattr(res, "data", None)
+        err = getattr(res, "error", None)
+        if err:
+            raise HTTPException(status_code=500, detail=str(err))
+        return {"id": data}
+
