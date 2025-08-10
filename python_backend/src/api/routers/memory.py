@@ -70,19 +70,25 @@ async def create_memory(request: Request, client = Depends(_get_supabase_client)
     return {"id": new_id}
 
 
-@router.delete("/{memory_id}", status_code=status.HTTP_200_OK)
-def delete_memory(memory_id: str, client = Depends(_get_supabase_client)):
-    # validate UUID
+
+@router.delete("", status_code=status.HTTP_200_OK)
+def delete_memory(
+    memory_id: str = Query(..., alias="id", description="Memory UUID to delete"),
+    user_id: str = Query(..., alias="userId", description="User UUID"),
+    client = Depends(_get_supabase_client),
+):
     try:
         p_id = str(UUID(memory_id))
     except Exception:
-        # client error -> raise HTTPException
-        raise HTTPException(status_code=400, detail="id must be a UUID")  # raised, not returned. :contentReference[oaicite:1]{index=1}
+        raise HTTPException(status_code=400, detail="id must be a UUID")
+    try:
+        p_user_id = str(UUID(user_id))
+    except Exception:
+        raise HTTPException(status_code=400, detail="userId must be a UUID")
 
-    # always use FIXED_USER_ID
     res = client.rpc(
         "delete_user_memory",
-        {"p_id": p_id, "p_user_id": str(FIXED_USER_ID)},
+        {"p_id": p_id, "p_user_id": p_user_id},
     ).execute()
 
     data = getattr(res, "data", None)
@@ -98,4 +104,28 @@ def delete_memory(memory_id: str, client = Depends(_get_supabase_client)):
         deleted_id = str(data)
     return {"id": deleted_id}
 
+@router.get("", status_code=status.HTTP_200_OK)
+def list_memories(
+    user_id: str = Query(..., alias="userId", description="User UUID (Supabase user id)"),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    client = Depends(_get_supabase_client),
+) -> Dict[str, Any]:
+    try:
+        p_user_id = str(UUID(user_id))
+    except Exception:
+        raise HTTPException(status_code=400, detail="userId must be a UUID")
+
+    res = client.rpc(
+        "list_user_memories",
+        {"p_user_id": p_user_id, "p_limit": int(limit), "p_offset": int(offset)},
+    ).execute()
+
+    data = getattr(res, "data", None)
+    err = getattr(res, "error", None)
+    if err:
+        raise HTTPException(status_code=500, detail=str(err))
+
+    items: Any = data or []
+    return {"memories": items}
 
