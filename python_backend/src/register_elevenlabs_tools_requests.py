@@ -278,6 +278,21 @@ def build_tools(base_url: str) -> List[Dict[str, Any]]:
             },
             "response_timeout_secs": 20,
         },
+        {
+            "type": "webhook",
+            "name": "memory-list",
+            "description": "List user memories (most recent first). Returns: { memories: [...] }.",
+            "api_schema": {
+                "url": f"{base}/memories",
+                "method": "GET",
+                "query_params_schema": _props([
+                    {"name": "userId", "type": "string", "description": "User UUID (Supabase user id)"},
+                    {"name": "limit", "type": "integer", "description": "Max rows (1–200, default 50)"},
+                    {"name": "offset", "type": "integer", "description": "Offset for pagination (default 0)"},
+                ]),
+            },
+            "response_timeout_secs": 20,
+        },
     ]
 
 
