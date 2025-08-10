@@ -17,11 +17,11 @@ void main() async {
 
   await SupabaseManager.initialize();
 
-  print('mocking data...');
-  for (var interval in mockIntervals) {
-    await ScheduleIntervalDto.insertInterval(
-      interval,
-    );
+  print('reading data...');
+  List<ScheduleInterval> intervals =
+      await ScheduleIntervalDto.readIntervals(start: DateTime.now(), end: DateTime.now().add(const Duration(days: 30)));
+  for (var interval in intervals) {
+    print('Interval: ${interval.toJson()}');
   }
   print('mocking data done');
 

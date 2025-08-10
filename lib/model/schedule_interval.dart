@@ -55,4 +55,9 @@ class ScheduleInterval {
     title: j['title'] as String?,
     description: j['description'] as String?,
   );
+
+  @override
+  String toString() {
+    return 'ScheduleInterval(id: $id, userId: $userId, type: $type, start: $start, end: $end, title: $title, description: $description)';
+  }
 }
