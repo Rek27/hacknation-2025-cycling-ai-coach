@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:hackathon/dto/schedule_interval_dto.dart';
-import 'package:hackathon/model/mock_schedule_interval.dart';
 import 'package:hackathon/services/supabase_manager.dart';
 import 'package:hackathon/themes/app_themes.dart';
 import 'package:hackathon/view/home/home_controller.dart';
-import 'package:hackathon/view/home/home_view.dart';
+import 'package:hackathon/view/scheduler/scheduler_view.dart';
 import 'package:provider/provider.dart';
-import 'package:hackathon/dto/test_dto.dart';
 import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
@@ -16,14 +13,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await SupabaseManager.initialize();
-
-  print('reading data...');
-  List<ScheduleInterval> intervals =
-      await ScheduleIntervalDto.readIntervals(start: DateTime.now(), end: DateTime.now().add(const Duration(days: 30)));
-  for (var interval in intervals) {
-    print('Interval: ${interval.toJson()}');
-  }
-  print('mocking data done');
 
   // Ensure a platform implementation for webview_flutter on iOS
   if (WebViewPlatform.instance == null ||
@@ -50,7 +39,7 @@ class MyApp extends StatelessWidget {
         darkTheme: AppThemes.dark,
         highContrastTheme: AppThemes.lightHighContrast,
         highContrastDarkTheme: AppThemes.darkHighContrast,
-        home: const HomeView(),
+        home: const SchedulerView(),
       ),
     );
   }
