@@ -23,19 +23,35 @@ class CyclingActivity {
     this.vo2Max,
   });
 
-  List<String> toCsvRow() {
-    return <String>[
-      startTime.toIso8601String(),
-      endTime.toIso8601String(),
-      duration.inSeconds.toString(),
-      distanceKm.toStringAsFixed(3),
-      averageSpeedKmh.toStringAsFixed(2),
-      activeEnergyKcal.toStringAsFixed(1),
-      (elevationGainMeters ?? 0).toStringAsFixed(1),
-      (averageHeartRateBpm ?? 0).toStringAsFixed(0),
-      (maxHeartRateBpm ?? 0).toStringAsFixed(0),
-      (vo2Max ?? 0).toStringAsFixed(1),
-    ];
+  Map<String, dynamic> toJson() {
+    return {
+      'start_time': startTime.toIso8601String(),
+      'end_time': endTime.toIso8601String(),
+      'duration_seconds': duration.inSeconds,
+      'distance_km': distanceKm,
+      'avg_speed_kmh': averageSpeedKmh,
+      'active_energy_kcal': activeEnergyKcal,
+      'elevation_gain_m': elevationGainMeters,
+      'avg_hr_bpm': averageHeartRateBpm?.round(),
+      'max_hr_bpm': maxHeartRateBpm?.round(),
+      'vo2max': vo2Max,
+    };
+  }
+
+  factory CyclingActivity.fromJson(Map<String, dynamic> json) {
+    // print(json);
+    return CyclingActivity(
+      startTime: DateTime.parse(json['started_at'] as String),
+      endTime: DateTime.parse(json['ended_at'] as String),
+      duration: Duration(seconds: json['duration_seconds'] as int),
+      distanceKm: (json['distance_km'] as num).toDouble(),
+      averageSpeedKmh: (json['avg_speed_kmh'] as num).toDouble(),
+      activeEnergyKcal: (json['active_energy_kcal'] as num).toDouble(),
+      elevationGainMeters: (json['elevation_gain_m'] as num?)?.toDouble(),
+      averageHeartRateBpm: (json['avg_hr_bpm'] as num?)?.toDouble(),
+      maxHeartRateBpm: (json['max_hr_bpm'] as num?)?.toDouble(),
+      vo2Max: (json['vo2max'] as num?)?.toDouble(),
+    );
   }
 
   static List<String> csvHeader() {

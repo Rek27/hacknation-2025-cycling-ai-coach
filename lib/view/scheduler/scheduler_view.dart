@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:kalender/kalender.dart';
 import 'package:hackathon/dto/schedule_interval_dto.dart';
 import 'package:hackathon/model/schedule_interval.dart';
+import 'package:hackathon/dto/cycling_activity_dto.dart';
+import 'package:hackathon/model/cycling_activity.dart' as activity_model;
 
 class SchedulerView extends StatefulWidget {
   const SchedulerView({super.key});
@@ -47,28 +49,78 @@ class _SchedulerViewState extends State<SchedulerView> {
   // --- Unified tile builder for header/body (fixes "Tile" text) ---
   Widget _eventTile(CalendarEvent event, DateTimeRange tileRange) {
     final s = event.data is ScheduleInterval ? event.data as ScheduleInterval : null;
-    final bg = _bgFor(s?.type);
-    final title = (s?.title?.trim().isNotEmpty ?? false)
-        ? s!.title!.trim()
-        : (s != null ? scheduleTypeToString(s.type) : 'New interval');
+    final a = event.data is activity_model.CyclingActivity ? event.data as activity_model.CyclingActivity : null;
 
+    if (s != null) {
+      final bg = _bgFor(s.type);
+      final title = (s.title?.trim().isNotEmpty ?? false)
+          ? s.title!.trim()
+          : scheduleTypeToString(s.type);
+      final desc = s.description;
+
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: _fgFor(bg), fontWeight: FontWeight.w600)),
+            if (desc != null && desc.isNotEmpty)
+              Text(
+                desc,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: _fgFor(bg)),
+              ),
+          ],
+        ),
+      );
+    }
+
+    if (a != null) {
+      final bg = Colors.purple.shade600;
+      final fg = _fgFor(bg);
+      final distance = '${a.distanceKm.toStringAsFixed(1)} km';
+      final speed = '${a.averageSpeedKmh.toStringAsFixed(1)} km/h';
+      final title = 'Ride $distance @ $speed';
+
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: fg.withOpacity(0.6), width: 1),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.directions_bike, size: 14, color: fg),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: fg, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Fallback
+    final bg = Theme.of(context).colorScheme.secondaryContainer;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        title,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: _fgFor(bg),
-          fontWeight: FontWeight.w600,
-        ),
-      ),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
+      child: Text('Event', style: TextStyle(color: _fgFor(bg))),
     );
   }
+
 
   String _formatDT(BuildContext context, DateTime dt, {bool use24h = true}) {
     final l = MaterialLocalizations.of(context);
@@ -159,15 +211,54 @@ class _SchedulerViewState extends State<SchedulerView> {
             () async {
               final data = event.data;
               if (data is ScheduleInterval) {
-                await _openEditDialog(data);
+                await _openEditDialog(data, eventRef: event); // pass event reference
+              } else if (data is activity_model.CyclingActivity) {
+                final a = data;
+                if (!mounted) return;
+                showDialog<void>(
+                  context: context,
+                  builder: (ctx) {
+                    return AlertDialog(
+                      title: const Text('Ride details'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Start: ${_formatDT(ctx, a.startTime)}'),
+                          Text('End:   ${_formatDT(ctx, a.endTime)}'),
+                          const SizedBox(height: 8),
+                          Text('Distance: ${a.distanceKm.toStringAsFixed(1)} km'),
+                          Text('Speed:    ${a.averageSpeedKmh.toStringAsFixed(1)} km/h'),
+                          if (a.elevationGainMeters != null)
+                            Text('Elevation: ${a.elevationGainMeters!.toStringAsFixed(0)} m'),
+                          if (a.averageHeartRateBpm != null)
+                            Text('Avg HR: ${a.averageHeartRateBpm!.toStringAsFixed(0)} bpm'),
+                        ],
+                      ),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+                      ],
+                    );
+                  },
+                );
               }
             }();
           },
           // Drag/resize → persist; rollback on failure.
           onEventChanged: (previous, updated) {
             () async {
+              final isActivity = previous.data is activity_model.CyclingActivity;
+              if (isActivity) {
+                _showError('Rides are read-only.');
+                _events.updateEvent(event: updated, updatedEvent: previous);
+                return;
+              }
+
               final s = previous.data is ScheduleInterval ? previous.data as ScheduleInterval : null;
-              if (s == null) return;
+              if (s == null) {
+                _events.updateEvent(event: updated, updatedEvent: previous);
+                return;
+              }
               // Block updates for unsynced events (no ID yet)
               if (s.id == null || s.id!.isEmpty) {
                 _showError('Event is syncing. Please try again shortly.');
@@ -219,8 +310,16 @@ class _SchedulerViewState extends State<SchedulerView> {
     setState(() => _isLoading = true);
     try {
       final items = await ScheduleIntervalDto.readIntervals(start: range.start, end: range.end);
+      final rides = await CyclingActivityDto.loadActivities(
+        start: range.start,
+        end: range.end,
+        userId: '00000000-0000-0000-0000-000000000000',
+      );
       _events.clearEvents();
-      _events.addEvents(items.map(_toEvent).toList());
+      _events.addEvents([
+        ...items.map(_toEvent),
+        ...rides.map(_toActivityEvent),
+      ]);
     } catch (e) {
       _showError('Failed to load: $e');
     } finally {
@@ -235,7 +334,53 @@ class _SchedulerViewState extends State<SchedulerView> {
     );
   }
 
+  CalendarEvent _toActivityEvent(activity_model.CyclingActivity a) {
+    return CalendarEvent(
+      dateTimeRange: DateTimeRange(start: a.startTime, end: a.endTime),
+      data: a,
+    );
+  }
+
   // ===== Dialogs =============================================================
+
+  Future<void> _confirmDelete(CalendarEvent event) async {
+    final s = event.data is ScheduleInterval ? event.data as ScheduleInterval : null;
+    if (s == null) return;
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete interval?'),
+        content: Text(
+          (s.title?.isNotEmpty ?? false) ? '“${s.title}”' : scheduleTypeToString(s.type),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton.tonal(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (ok != true) return;
+
+    try {
+      // Backend delete if we have a server ID.
+      if (s.id != null && s.id!.isNotEmpty) {
+        await ScheduleIntervalDto.deleteIntervalById(s.id!);
+      }
+      // Remove from the controller immediately for snappy UX.
+      _events.removeEvent(event);
+
+      // Reload visible range to stay canonical (esp. web).
+      final range = _calendar.visibleDateTimeRange.value;
+      _loadForRange(range);
+    } catch (e) {
+      _showError('Failed to delete: $e');
+    }
+  }
 
   Future<ScheduleInterval?> _openCreateDialog(DateTimeRange slot) async {
     final ScheduleInterval draft = ScheduleInterval(
@@ -249,10 +394,9 @@ class _SchedulerViewState extends State<SchedulerView> {
     return _openEditOrCreateDialog(draft, isCreate: true);
   }
 
-  Future<void> _openEditDialog(ScheduleInterval original) async {
-    final saved = await _openEditOrCreateDialog(original, isCreate: false);
+  Future<void> _openEditDialog(ScheduleInterval original, {CalendarEvent? eventRef}) async {
+    final saved = await _openEditOrCreateDialog(original, isCreate: false, eventRef: eventRef);
     if (saved != null) {
-      // Refresh visible range so changes propagate reliably on web
       final range = _calendar.visibleDateTimeRange.value;
       _loadForRange(range);
     }
@@ -261,6 +405,7 @@ class _SchedulerViewState extends State<SchedulerView> {
   Future<ScheduleInterval?> _openEditOrCreateDialog(
       ScheduleInterval base, {
         required bool isCreate,
+        CalendarEvent? eventRef,
       }) async {
     final titleCtrl = TextEditingController(text: base.title ?? '');
     final descCtrl = TextEditingController(text: base.description ?? '');
@@ -332,6 +477,32 @@ class _SchedulerViewState extends State<SchedulerView> {
                 ),
               ),
               actions: [
+                if (!isCreate)
+                  TextButton.icon(
+                    icon: const Icon(Icons.delete_outline),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.error,
+                    ),
+                    onPressed: () async {
+                      // Prefer using the tapped event ref if available (removes exact instance).
+                      if (eventRef != null) {
+                        await _confirmDelete(eventRef);
+                      } else {
+                        // Fallback: delete by id and remove by predicate.
+                        if (base.id != null && base.id!.isNotEmpty) {
+                          await ScheduleIntervalDto.deleteIntervalById(base.id!);
+                        }
+                        _events.removeWhere((e) {
+                          final d = e.data;
+                          return d is ScheduleInterval && d.id == base.id;
+                        } as bool Function(int key, CalendarEvent<Object?> element));
+                        final range = _calendar.visibleDateTimeRange.value;
+                        _loadForRange(range);
+                      }
+                      if (context.mounted) Navigator.pop(context, false);
+                    },
+                    label: const Text('Delete'),
+                  ),
                 TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
                 FilledButton(
                   onPressed: () async {
