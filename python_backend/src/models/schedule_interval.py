@@ -1,3 +1,9 @@
+"""Pydantic models for schedule intervals.
+
+`ScheduleInterval` mirrors rows returned by the `public.schedule_intervals`
+table/functions. Timestamps are validated to be timezone-aware.
+"""
+
 from enum import Enum
 from pydantic import BaseModel, field_validator
 from typing import Optional
@@ -10,6 +16,10 @@ class ScheduleType(str, Enum):
     Other = "Other"
 
 class ScheduleInterval(BaseModel):
+    """Schedule block clipped to a window with metadata.
+
+    The API enforces tz-aware timestamps for correctness in UTC math.
+    """
     id: UUID
     user_id: UUID
     type: ScheduleType

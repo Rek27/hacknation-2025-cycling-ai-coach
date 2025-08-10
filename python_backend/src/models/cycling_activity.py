@@ -1,5 +1,12 @@
 from __future__ import annotations
 
+"""Pydantic model for cycling activity rows.
+
+Represents records from `public.cycling_activities` returned by Supabase RPCs.
+The model uses database snake_case field names to avoid mapping overhead.
+Utility properties provide derived values used by analytics endpoints.
+"""
+
 from datetime import datetime, timedelta
 from typing import Optional, Tuple
 from uuid import UUID
@@ -8,10 +15,9 @@ from pydantic import BaseModel
 
 
 class CyclingActivity(BaseModel):
-    """
-    Python representation of a cycling activity row from `public.cycling_activities`.
+    """Cycling activity row with helpers for analytics.
 
-    Fields follow the database snake_case naming to match Supabase RPC results.
+    Fields mirror database columns (snake_case) to match Supabase RPC results.
     """
 
     id: Optional[UUID] = None
@@ -34,9 +40,9 @@ class CyclingActivity(BaseModel):
 
     @property
     def computed_speed_kmh(self) -> Optional[float]:
-        """Compute speed from distance and duration when not provided or for consistency.
+        """Compute speed from distance and duration when missing in the row.
 
-        Returns None when duration is zero or missing.
+        Returns None if duration is zero or not set.
         """
         if self.duration_seconds is None or self.duration_seconds <= 0:
             return None
@@ -44,7 +50,7 @@ class CyclingActivity(BaseModel):
 
     @property
     def day_key(self) -> str:
-        """ISO date string (YYYY-MM-DD) for the activity's start day (UTC)."""
+        """Return ISO date string (YYYY-MM-DD) for the activity's start day (UTC)."""
         return self.started_at.date().isoformat()
 
     @property

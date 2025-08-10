@@ -1,45 +1,53 @@
-<!-- 
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+## App Overview
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages). 
+Flutter app + FastAPI backend for cycling analytics, scheduling, and AI chat. Supabase provides PostgreSQL and Auth; ElevenLabs webhooks call backend routes via an ngrok HTTPS URL.
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages). 
--->
+### Why Flutter
+- Multi‑platform support (iOS/Android/Desktop/Web) from a single codebase
+- High‑quality UI and fast iteration with hot reload
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+### Screens
+- Home/Analytics: charts and summaries (distance, energy, HR, speed)
+- Scheduler: create/edit/delete schedule intervals (15‑minute grid)
+- AI Chat: embedded assistant UI from ElevenLabs Conversation AI
 
-## Features
+### Backend and public access
+- FastAPI runs on `http://localhost:8001`, containerized with Docker; Python deps managed with `uv`
+- ngrok exposes the backend publicly for ElevenLabs webhook tools; set the public base URL when registering tools
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+## How to run
 
-## Getting started
+1) Prerequisites
+- Flutter SDK installed and `flutter doctor` is green
+- Python 3.11+, Docker, and ngrok
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+2) Create a `.env` at the repository root with:
+- `SUPABASE_URL` — your Supabase project URL
+- `SUPABASE_ANON_KEY` — anon key for the app/backend
+- `ELEVENLABS_API_KEY` — for tool registration/updates
+- `BACKEND_BASE_URL` — set to your public ngrok URL when registering tools
 
-## Usage
-
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder. 
-
-```dart
-const like = 'sample';
+3) Start the FastAPI backend (Dockerized)
+```bash
+cd python_backend
+docker-compose up --build
+# The API will be available at http://localhost:8001
 ```
 
-## Additional information
+4) Expose the API with ngrok (for ElevenLabs webhooks)
+```bash
+ngrok http 8001
+# Copy the HTTPS forwarding URL, e.g. https://<your-subdomain>.ngrok-free.app
+```
 
-TODO: Tell users more about the package: where to find more information, how to 
-contribute to the package, how to file issues, what response they can expect 
-from the package authors, and more.
+5) Update ElevenLabs tools to point to your ngrok URL
+```bash
+cd python_backend
+python -m src.register_elevenlabs_tools_requests
+```
+The tool definitions and registration script live in `python_backend/src/register_elevenlabs_tools_requests.py`.
 
-
-
-
-Used ngrok to expose the FastAPI tools for ElevenLabs
-MCP server failed, ElevenLabs says HTTPS is required while I am providing HTTPS
+6) Run the Flutter app
+```bash
+flutter run
+```

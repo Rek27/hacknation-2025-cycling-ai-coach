@@ -6,10 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, status, Request, Depends
 import json
 
-try:
-    from supabase import create_client
-except ImportError:
-    create_client = None  # type: ignore
+from src.services.supabase_service import get_client_anon
 
 from datetime import datetime
 
@@ -21,13 +18,7 @@ router = APIRouter(prefix="/schedule", tags=["Schedule"])
 
 
 def _get_supabase_client():
-    if create_client is None:
-        raise HTTPException(status_code=500, detail="Supabase client not installed")
-    supabase_url = os.environ.get("SUPABASE_URL")
-    supabase_anon_key = os.environ.get("SUPABASE_ANON_KEY")
-    if not supabase_url or not supabase_anon_key:
-        raise HTTPException(status_code=500, detail="Supabase credentials not configured")
-    return create_client(supabase_url, supabase_anon_key)
+    return get_client_anon()
 
 
 def _parse_uuid(value: Optional[str]) -> Optional[str]:
@@ -46,6 +37,11 @@ def list_intervals(
     user_id: Optional[str] = Query(None, alias="userId"),
     types_csv: Optional[str] = Query(None, alias="types", description="Optional comma-separated types: Cycling,Work,Other"),
 ) -> Dict[str, Any]:
+    """List schedule intervals overlapping a date window.
+
+    Filters: [startDateIso, endDateIso] (half-open), optional userId and types (CSV of enum values).
+    Returns normalized intervals clipped to the requested window.
+    """
     client = _get_supabase_client()
 
     p_user_uuid = _parse_uuid(user_id)
@@ -84,7 +80,11 @@ async def create_interval(
     request: Request,
     client = Depends(_get_supabase_client),
 ) -> Dict[str, Any]:
-    """Create a schedule interval accepting JSON body or query params."""
+    """Create a schedule interval accepting JSON body or query params.
+
+    Required: userId, type, startIso/startDateIso, endIso/endDateIso. Optional title, description.
+    Returns the new interval id.
+    """
 
     # Parse JSON body if present (tolerate empty/invalid by falling back to query)
     body: Dict[str, Any] = {}
@@ -152,6 +152,11 @@ async def create_interval(
 
 @router.patch("/intervals", status_code=status.HTTP_200_OK)
 def update_interval(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Update a schedule interval by id with partial fields.
+
+    Accepts JSON payload with id and any of: newStartIso, newEndIso, type, title, description, snap.
+    Returns the updated interval.
+    """
     client = _get_supabase_client()
 
     p_id = payload.get("id")
@@ -206,7 +211,7 @@ def update_interval(payload: Dict[str, Any]) -> Dict[str, Any]:
 def delete_interval(
     interval_id: str = Query(..., alias="id", description="Interval UUID to delete"),
 ) -> Dict[str, Any]:
-    """Delete a schedule interval by id via Supabase RPC."""
+    """Delete a schedule interval by id via Supabase RPC. Returns the deleted id."""
     client = _get_supabase_client()
 
     try:

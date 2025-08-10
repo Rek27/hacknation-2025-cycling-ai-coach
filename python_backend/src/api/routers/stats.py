@@ -5,23 +5,14 @@ import os
 import math
 from uuid import UUID
 
-try:
-    from supabase import create_client
-except ImportError:
-    create_client = None  # type: ignore
+from src.services.supabase_service import get_client_anon
 
 
 router = APIRouter(prefix="/stats", tags=["Stats"])
 
 
 def _get_supabase_client():
-    if create_client is None:
-        raise HTTPException(status_code=500, detail="Supabase client not installed")
-    supabase_url = os.environ.get("SUPABASE_URL")
-    supabase_anon_key = os.environ.get("SUPABASE_ANON_KEY")
-    if not supabase_url or not supabase_anon_key:
-        raise HTTPException(status_code=500, detail="Supabase credentials not configured")
-    return create_client(supabase_url, supabase_anon_key)
+    return get_client_anon()
 
 
 from src.models.cycling_activity import CyclingActivity
@@ -68,6 +59,10 @@ def get_summary(
     end_date_iso: str = Query(..., alias="endDateIso", description="Exclusive ISO-8601 end, e.g., 2025-02-01T00:00:00Z"),
     user_id: Optional[str] = Query(None, alias="userId"),
 ) -> Dict[str, Any]:
+    """Aggregate totals for a date window.
+
+    Returns total distance, duration, elevation, count of rides, and average speed.
+    """
     client = _get_supabase_client()
     activities = _fetch_activities(client, start_date_iso, end_date_iso, user_id)
 
@@ -95,15 +90,16 @@ def get_summary(
     }
 
 
-# (Removed) /daily endpoint to keep API compact
-
-
 @router.get("/weekly", status_code=status.HTTP_200_OK)
 def get_weekly_summary(
     start_date: str = Query(..., alias="startDate", description="Inclusive start date YYYY-MM-DD or ISO-8601"),
     end_date: str = Query(..., alias="endDate", description="Exclusive end date YYYY-MM-DD or ISO-8601"),
     user_id: Optional[str] = Query(None, alias="userId"),
 ) -> Dict[str, Any]:
+    """Weekly rollups (ISO weeks, Monday start) within a date range.
+
+    Each week includes totals and average speed; useful for progression tracking.
+    """
     start_iso = start_date if "T" in start_date else f"{start_date}T00:00:00Z"
     end_iso = end_date if "T" in end_date else f"{end_date}T00:00:00Z"
 
@@ -222,6 +218,10 @@ def get_overtraining_metrics(
     ctl_days: int = Query(42, ge=7, le=180),
     atl_days: int = Query(7, ge=3, le=28),
 ) -> Dict[str, Any]:
+    """Compute training load signals TSB (CTL−ATL) and ACWR for the window.
+
+    Returns current TSB, ACWR, and a coarse risk label with flags.
+    """
     client = _get_supabase_client()
     activities = _fetch_activities(client, start_date_iso, end_date_iso, user_id)
 
@@ -287,6 +287,10 @@ def get_workload_score(
     end_date_iso: str = Query(..., alias="endDateIso"),
     user_id: Optional[str] = Query(None, alias="userId"),
 ) -> Dict[str, Any]:
+    """Score each ride 1–10 by volume/intensity/terrain vs a 28‑day baseline.
+
+    Returns per‑ride scores and average scores over recent periods.
+    """
     client = _get_supabase_client()
     activities = _fetch_activities(client, start_date_iso, end_date_iso, user_id)
 
@@ -354,6 +358,10 @@ def get_vo2max_trend(
     end_date_iso: str = Query(..., alias="endDateIso"),
     user_id: Optional[str] = Query(None, alias="userId"),
 ) -> Dict[str, Any]:
+    """VO2max progression metrics from activity values.
+
+    Returns rolling personal record and slope per 30 days.
+    """
     client = _get_supabase_client()
     acts = _fetch_activities(client, start_date_iso, end_date_iso, user_id)
     pts = [(a.started_at, float(a.vo2max)) for a in acts if a.vo2max is not None]
@@ -383,6 +391,10 @@ def get_climb_metrics(
     user_id: Optional[str] = Query(None, alias="userId"),
     limit: int = Query(10, ge=1, le=100),
 ) -> Dict[str, Any]:
+    """Climbing performance leaderboards for the window.
+
+    Returns best VAM and best climb density rides (limited by `limit`).
+    """
     client = _get_supabase_client()
     acts = _fetch_activities(client, start_date_iso, end_date_iso, user_id)
 

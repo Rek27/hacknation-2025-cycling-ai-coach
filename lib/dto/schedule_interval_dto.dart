@@ -1,7 +1,13 @@
+/// DTO helpers for schedule intervals via Supabase RPC.
+///
+/// Encapsulates create/read/update/delete calls to Postgres functions so
+/// widgets and controllers can stay declarative.
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../model/schedule_interval.dart';
 
 abstract class ScheduleIntervalDto {
+  /// Create a schedule interval using the `create_schedule_interval` RPC.
+  /// `interval.toJson()` must contain the expected SQL parameters.
   static Future<void> insertInterval(
     ScheduleInterval interval,
   ) async {
@@ -46,6 +52,8 @@ abstract class ScheduleIntervalDto {
     return rows.map(ScheduleInterval.fromJson).toList();
   }
 
+  /// Update a schedule interval by id using `update_schedule_interval_by_id`.
+  /// Returns the updated interval row.
   static Future<ScheduleInterval> updateInterval(
       ScheduleInterval interval) async {
     final supabase = Supabase.instance.client;
@@ -72,6 +80,7 @@ abstract class ScheduleIntervalDto {
     return ScheduleInterval.fromJson(rows.first);
   }
 
+  /// Delete a schedule interval by id using `delete_schedule_interval_by_id`.
   static Future<void> deleteIntervalById(String id) async {
     final supabase = Supabase.instance.client;
     await supabase.rpc<dynamic>('delete_schedule_interval_by_id', params: {
