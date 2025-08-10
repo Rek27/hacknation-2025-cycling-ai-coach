@@ -84,12 +84,12 @@ class AppColors {
   /// The dark color scheme of the app.
   static MaterialScheme get darkScheme => const MaterialScheme(
         brightness: Brightness.dark,
-        primary: Color(0xFF629EB0),
+        primary: Color.fromARGB(255, 61, 169, 201),
         surfaceTint: Color(0xFF629EB0),
         onPrimary: Color(0xFF001F22),
         primaryContainer: Color(0xFF004346),
         onPrimaryContainer: Color(0xFFA4CEDF),
-        secondary: Color(0xFF508991),
+        secondary: Color.fromARGB(255, 79, 150, 143),
         onSecondary: Color(0xFF001F22),
         secondaryContainer: Color(0xFF006B4F),
         onSecondaryContainer: Color(0xFF629EB0),

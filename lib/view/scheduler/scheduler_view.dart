@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hackathon/themes/app_constants.dart';
+import 'package:hackathon/view/home/widgets/ai_chat.dart';
 import 'package:hackathon/view/scheduler/scheduler_controller.dart';
 import 'package:kalender/kalender.dart';
 import 'package:hackathon/model/schedule_interval.dart';
@@ -203,6 +204,19 @@ class _SchedulerViewState extends State<SchedulerView> {
                     ),
                   ),
                 ),
+              // Overlay AI chat in bottom-right
+              Positioned(
+                right: Spacings.m,
+                bottom: Spacings.m,
+                child: Material(
+                  color: Colors.transparent,
+                  child: SizedBox(
+                    width: 360,
+                    height: 400,
+                    child: const AIChat(),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
