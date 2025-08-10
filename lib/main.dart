@@ -4,7 +4,7 @@ import 'package:hackathon/themes/app_themes.dart';
 import 'package:hackathon/view/home/home_controller.dart';
 import 'package:hackathon/view/scheduler/scheduler_view.dart';
 import 'package:provider/provider.dart';
-import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
 import 'model/schedule_interval.dart';

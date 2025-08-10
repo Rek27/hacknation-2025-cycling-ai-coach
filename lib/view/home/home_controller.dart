@@ -11,16 +11,17 @@ class HomeController extends ChangeNotifier {
     loadMockCyclingData(count: 24);
   }
 
-  Future<void> syncFromHealth() async {
+  Future<bool> syncFromHealth() async {
     final bool granted = await HealthService.instance.requestPermissions(
       readCycling: true,
     );
-    if (!granted) return;
+    if (!granted) return false;
 
     last90DayCycling =
         await HealthService.instance.fetchCyclingActivitiesLast90Days();
 
     notifyListeners();
+    return true;
   }
 
   Future<void> exportCyclingCsvAndShare() async {

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:health/health.dart';
 import 'package:hackathon/model/cycling_activity.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -23,11 +22,12 @@ class HealthService {
   }) async {
     await configureIfNeeded();
 
+    // Request only READ for supported types; avoid redundant/unsupported combos.
     final List<HealthDataType> types = <HealthDataType>[
+      if (readCycling) HealthDataType.WORKOUT,
       if (readCycling) HealthDataType.DISTANCE_CYCLING,
       if (readCycling) HealthDataType.ACTIVE_ENERGY_BURNED,
       if (readCycling) HealthDataType.HEART_RATE,
-      if (readCycling) HealthDataType.WORKOUT,
     ];
 
     final List<HealthDataAccess> permissions = types
@@ -35,51 +35,29 @@ class HealthService {
             ? HealthDataAccess.READ_WRITE
             : HealthDataAccess.READ)
         .toList(growable: false);
-
     try {
       final bool granted = await _health.requestAuthorization(
         types,
         permissions: permissions,
       );
       if (granted) return true;
-      // Fallback: open Settings to let user grant manually in prototype flows
-      await openAppSettings();
+
+      // Double-check explicit hasPermissions if request flow returns false
       final bool has =
           (await _health.hasPermissions(types, permissions: permissions)) ??
               false;
-      return has;
-    } catch (e, st) {
-      if (kDebugMode) {
-        // ignore: avoid_print
-        print('Health permission error: $e\n$st');
-      }
-      return false;
-    }
-  }
+      if (has) return true;
 
-  Future<List<int>> fetchStepsPerDay({int days = 7}) async {
-    await configureIfNeeded();
-    final DateTime now = DateTime.now();
-    final List<int> results = <int>[];
-    for (int i = days - 1; i >= 0; i--) {
-      final DateTime dayStart =
-          DateTime(now.year, now.month, now.day).subtract(Duration(days: i));
-      final DateTime dayEnd = dayStart.add(const Duration(days: 1));
-      try {
-        final int? steps = await _health.getTotalStepsInInterval(
-          dayStart,
-          dayEnd,
-        );
-        results.add(steps ?? 0);
-      } catch (e, st) {
-        if (kDebugMode) {
-          // ignore: avoid_print
-          print('Steps fetch error for $dayStart: $e\n$st');
-        }
-        results.add(0);
-      }
+      // Fallback: open Settings to let user grant manually
+      await openAppSettings();
+      final bool hasAfter =
+          (await _health.hasPermissions(types, permissions: permissions)) ??
+              false;
+      return hasAfter;
+    } catch (e, st) {
+      print('Health permission error: $e\n$st');
+      rethrow;
     }
-    return results;
   }
 
   Future<List<CyclingActivity>> fetchCyclingActivitiesLast90Days() async {

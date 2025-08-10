@@ -33,8 +33,8 @@ class DistanceLineChart extends StatelessWidget {
                 sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 40,
-              getTitlesWidget: (value, meta) => Text(
-                  '${value.toInt() + 1}', style: theme.textTheme.bodySmall),
+              getTitlesWidget: (value, meta) => Text('${value.toInt() + 1}',
+                  style: theme.textTheme.bodySmall),
             )),
             rightTitles:
                 const AxisTitles(sideTitles: SideTitles(showTitles: false)),

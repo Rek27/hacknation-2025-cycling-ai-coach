@@ -12,7 +12,7 @@ class AIChat extends StatefulWidget {
 
 class _AIChatState extends State<AIChat> {
   late final WebViewController _controller;
-  String? _lastBgHex;
+  bool _loaded = false;
 
   @override
   void initState() {
@@ -36,41 +36,28 @@ class _AIChatState extends State<AIChat> {
   }
 
   Future<void> _ensureMicPermission() async {
-    final status = await Permission.microphone.status;
+    // Request on app side so the toggle appears in iOS Settings
+    final PermissionStatus status = await Permission.microphone.status;
     if (status.isGranted) return;
 
-    final res = await Permission.microphone.request();
-    if (res.isPermanentlyDenied) {
-      //await openAppSettings();
+    final PermissionStatus res = await Permission.microphone.request();
+    print('res: $res');
+    if (res.isPermanentlyDenied || res.isRestricted) {
+      await openAppSettings();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Compute background color from widget or current theme
-    final Color bg = Theme.of(context).colorScheme.surface;
-    final String bgHex = _toCssHex(bg);
-
-    if (_lastBgHex != bgHex) {
-      _controller.loadHtmlString(_buildHtml(bgHex));
-      _lastBgHex = bgHex;
+    if (!_loaded) {
+      _controller.loadHtmlString(_buildHtml());
+      _loaded = true;
     }
 
     return WebViewWidget(controller: _controller);
   }
 
-  String _toCssHex(Color c) {
-    // Use component accessors to avoid deprecated fields
-    final int r = ((c.r * 255.0).round()) & 0xFF;
-    final int g = ((c.g * 255.0).round()) & 0xFF;
-    final int b = ((c.b * 255.0).round()) & 0xFF;
-    return '#'
-        '${r.toRadixString(16).padLeft(2, '0')}'
-        '${g.toRadixString(16).padLeft(2, '0')}'
-        '${b.toRadixString(16).padLeft(2, '0')}';
-  }
-
-  String _buildHtml(String bgHex) {
+  String _buildHtml() {
     const String agentId = 'agent_6001k2812qqde7k95sppksdhw516';
     const String scriptUrl =
         'https://unpkg.com/@elevenlabs/convai-widget-embed';
@@ -81,16 +68,16 @@ class _AIChatState extends State<AIChat> {
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <script src="$scriptUrl" async type="text/javascript"></script>
     <style>
-      html, body, #app { margin:0; padding:0; height:100%; width:100%; }
-      body { background: transparent !important; }
-      #app { position: fixed; inset: 0; }
-      elevenlabs-convai.full { display:block; width:100%; height:100%; min-height:100%; }
+      html, body { margin:0; padding:0; background: transparent !important; }
+      #app { display: inline-block; }
+      elevenlabs-convai.full { display: inline-block; width: auto; height: auto; }
     </style>
   </head>
   <body>
     <div id="app">
       <elevenlabs-convai class="full" agent-id="$agentId"></elevenlabs-convai>
     </div>
+    <!-- Simplified: no scripting; element fills container provided by Flutter -->
   </body>
 </html>
 ''';

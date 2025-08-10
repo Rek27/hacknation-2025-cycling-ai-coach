@@ -26,10 +26,16 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>NSCameraUsageDescription</key>
-	<string>We use the camera for video capture if needed.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>We use the microphone for voice conversations with your coach.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>We use speech recognition to transcribe your voice.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>We use the camera for video capture if needed.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>This app reads your cycling workouts, distance, energy, and heart rate to coach your rides.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>This app may write cycling workouts to help track your training.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
