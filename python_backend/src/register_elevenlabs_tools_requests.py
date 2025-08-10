@@ -128,7 +128,6 @@ def build_tools(base_url: str) -> List[Dict[str, Any]]:
             "api_schema": {
                 "url": f"{base}/api/tools/load_cycling_activities",
                 "method": "POST",
-                "query_params_schema": {"properties": {}},
                 "request_body_schema": {
                     "type": "object",
                     "properties": {
@@ -171,6 +170,67 @@ def build_tools(base_url: str) -> List[Dict[str, Any]]:
                 }
             },
             "response_timeout_secs": 20
+        },
+        {
+            "type": "webhook",
+            "name": "schedule-list",
+            "description": "List schedule intervals overlapping a date window. Returns: { intervals: [interval…] } where interval matches the schedule_intervals table (id, user_id, type, start_at, end_at, title, description, created_at, updated_at).",
+            "api_schema": {
+                "url": f"{base}/schedule/intervals",
+                "method": "GET",
+                "query_params_schema": _props([
+                    {"name": "startDateIso", "type": "string", "description": "Inclusive ISO-8601 UTC start (e.g. 2025-06-01T00:00:00Z)"},
+                    {"name": "endDateIso", "type": "string", "description": "Exclusive ISO-8601 UTC end (boundary not included)"},
+                    {"name": "userId", "type": "string", "description": "Optional athlete UUID (Supabase user id)"},
+                    {"name": "types", "type": "string", "description": "Optional comma-separated list of types: Cycling,Work,Other"},
+                ]),
+            },
+            "response_timeout_secs": 20,
+        },
+        {
+            "type": "webhook",
+            "name": "schedule-create",
+            "description": "Create a schedule interval (snapped to 15 minutes). Returns: { id } for the new interval.",
+            "api_schema": {
+                "url": f"{base}/schedule/intervals",
+                "method": "POST",
+                "request_body_schema": {
+                    "type": "object",
+                    "properties": {
+                        "userId": {"type": "string", "description": "Athlete UUID (Supabase user id)"},
+                        "type": {"type": "string", "description": "One of Cycling, Work, Other"},
+                        "startIso": {"type": "string", "description": "ISO-8601 UTC start"},
+                        "endIso": {"type": "string", "description": "ISO-8601 UTC end (exclusive)"},
+                        "title": {"type": "string", "description": "Optional title", "nullable": True},
+                        "description": {"type": "string", "description": "Optional description", "nullable": True},
+                    },
+                    "required": ["userId", "type", "startIso", "endIso"],
+                },
+            },
+            "response_timeout_secs": 20,
+        },
+        {
+            "type": "webhook",
+            "name": "schedule-update",
+            "description": "Update a schedule interval by id with optional fields. Returns: { interval } with the updated interval.",
+            "api_schema": {
+                "url": f"{base}/schedule/intervals",
+                "method": "PATCH",
+                "request_body_schema": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string", "description": "Interval UUID"},
+                        "newStartIso": {"type": "string", "description": "New ISO-8601 UTC start", "nullable": True},
+                        "newEndIso": {"type": "string", "description": "New ISO-8601 UTC end (exclusive)", "nullable": True},
+                        "type": {"type": "string", "description": "One of Cycling, Work, Other", "nullable": True},
+                        "title": {"type": "string", "description": "New title", "nullable": True},
+                        "description": {"type": "string", "description": "New description", "nullable": True},
+                        "snap": {"type": "boolean", "description": "Snap to 15-minute grid (default true)", "nullable": True},
+                    },
+                    "required": ["id"],
+                },
+            },
+            "response_timeout_secs": 20,
         },
     ]
 
