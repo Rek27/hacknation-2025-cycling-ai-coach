@@ -7,7 +7,6 @@ import 'package:hackathon/view/home/widgets/speed_line_chart.dart';
 import 'package:hackathon/view/home/widgets/summary_cards.dart';
 import 'package:provider/provider.dart';
 import 'package:hackathon/view/home/home_controller.dart';
-import 'package:hackathon/view/home/ai_chat.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -60,10 +59,8 @@ class _HomeViewState extends State<HomeView> {
           ],
         ),
       ),
-      floatingActionButton: SizedBox(
-        height: 450,
-        child: AIChat(),
-      ),
+      // AI chat detached for now
+      floatingActionButton: null,
     );
   }
 }

@@ -70,4 +70,11 @@ abstract class ScheduleIntervalDto {
     }
     return ScheduleInterval.fromJson(rows.first);
   }
+
+  static Future<void> deleteIntervalById(String id) async {
+    final supabase = Supabase.instance.client;
+    await supabase.rpc<dynamic>('delete_schedule_interval_by_id', params: {
+      'p_id': id,
+    });
+  }
 }

@@ -181,3 +181,37 @@ def update_interval(payload: Dict[str, Any]) -> Dict[str, Any]:
     return {"interval": interval}
 
 
+@router.delete("/intervals", status_code=status.HTTP_200_OK)
+def delete_interval(
+    interval_id: str = Query(..., alias="id", description="Interval UUID to delete"),
+) -> Dict[str, Any]:
+    """Delete a schedule interval by id via Supabase RPC."""
+    client = _get_supabase_client()
+
+    try:
+        p_id = str(UUID(str(interval_id)))
+    except Exception:
+        raise HTTPException(status_code=400, detail="id must be a UUID")
+
+    res = client.rpc(
+        "delete_schedule_interval_by_id",
+        {"p_id": p_id},
+    ).execute()
+
+    data = getattr(res, "data", None)
+    err = getattr(res, "error", None)
+    if err:
+        raise HTTPException(status_code=500, detail=str(err))
+
+    # The RPC returns the deleted id or raises an error if not found
+    deleted_id = data
+    try:
+        deleted_id = str(UUID(str(data)))
+    except Exception:
+        pass
+
+    if not deleted_id:
+        raise HTTPException(status_code=404, detail="Interval not found")
+
+    return {"id": deleted_id}
+

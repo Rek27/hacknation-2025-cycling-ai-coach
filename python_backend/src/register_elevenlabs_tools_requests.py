@@ -232,6 +232,19 @@ def build_tools(base_url: str) -> List[Dict[str, Any]]:
             },
             "response_timeout_secs": 20,
         },
+        {
+            "type": "webhook",
+            "name": "schedule-delete",
+            "description": "Delete a schedule interval by id. Returns: { id } of the deleted interval.",
+            "api_schema": {
+                "url": f"{base}/schedule/intervals",
+                "method": "DELETE",
+                "query_params_schema": _props([
+                    {"name": "id", "type": "string", "description": "Interval UUID to delete"},
+                ]),
+            },
+            "response_timeout_secs": 20,
+        },
     ]
 
 
