@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:hackathon/dto/schedule_interval_dto.dart';
+import 'package:hackathon/model/mock_schedule_interval.dart';
 import 'package:hackathon/services/supabase_manager.dart';
 import 'package:hackathon/themes/app_themes.dart';
 import 'package:hackathon/view/home/home_controller.dart';
@@ -8,12 +10,20 @@ import 'package:hackathon/dto/test_dto.dart';
 import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
+import 'model/schedule_interval.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await SupabaseManager.initialize();
 
-  print(await TestDto.testFunction(testId: 1));
+  print('mocking data...');
+  for (var interval in mockIntervals) {
+    await ScheduleIntervalDto.insertInterval(
+      interval,
+    );
+  }
+  print('mocking data done');
 
   // Ensure a platform implementation for webview_flutter on iOS
   if (WebViewPlatform.instance == null ||
