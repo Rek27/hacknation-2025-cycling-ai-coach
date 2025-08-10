@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hackathon/model/cycling_activity.dart';
 import 'package:hackathon/themes/app_constants.dart';
 import 'package:hackathon/view/home/widgets/ai_chat.dart';
 import 'package:hackathon/view/home/widgets/distance_line_chart.dart';
@@ -6,6 +7,7 @@ import 'package:hackathon/view/home/widgets/energy_bar_chart.dart';
 import 'package:hackathon/view/home/widgets/heart_rate_line_chart.dart';
 import 'package:hackathon/view/home/widgets/speed_line_chart.dart';
 import 'package:hackathon/view/home/widgets/summary_cards.dart';
+import 'package:hackathon/view/home/widgets/add_activity_dialog.dart';
 import 'package:hackathon/view/scheduler/scheduler_view.dart';
 import 'package:provider/provider.dart';
 import 'package:hackathon/view/home/home_controller.dart';
@@ -29,6 +31,20 @@ class _HomeViewState extends State<HomeView> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Cycling Coach'),
+        leading: IconButton(
+          icon: const Icon(Icons.add_circle_outline),
+          tooltip: 'Add activity',
+          onPressed: () async {
+            final result = await showDialog(
+              context: context,
+              builder: (_) => const AddActivityDialog(),
+            );
+            if (result is CyclingActivity) {
+              if (!mounted) return;
+              context.read<HomeController>().addActivity(result);
+            }
+          },
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.calendar_month),
@@ -39,7 +55,7 @@ class _HomeViewState extends State<HomeView> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.import_export),
+            icon: const Icon(Icons.sync),
             tooltip: 'Sync last 90 days',
             onPressed: () async {
               final success = await controller.syncFromHealth();

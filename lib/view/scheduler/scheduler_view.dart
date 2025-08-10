@@ -15,16 +15,11 @@ class _SchedulerViewState extends State<SchedulerView> {
   final DefaultEventsController _events = DefaultEventsController();
   final CalendarController _calendar = CalendarController();
 
-  bool _isLoading = true;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    // Initial load for current week.
-    final now = DateTime.now();
-    final start = _startOfWeek(now);
-    _loadForRange(
-        DateTimeRange(start: start, end: start.add(const Duration(days: 7))));
   }
 
   @override
@@ -34,67 +29,30 @@ class _SchedulerViewState extends State<SchedulerView> {
     super.dispose();
   }
 
-  // --- Colors per category ---
-  Color _bgFor(ScheduleType? t) {
-    switch (t) {
-      case ScheduleType.cycling:
-        return Colors.green.shade600;
-      case ScheduleType.work:
-        return Colors.blue.shade600;
-      case ScheduleType.other:
-        return Colors.orange.shade600;
-      default:
-        return Theme.of(context).colorScheme.secondaryContainer;
-    }
-  }
-
-  Color _fgFor(Color bg) => bg.computeLuminance() > 0.5
-      ? Theme.of(context).colorScheme.onSurface
-      : Theme.of(context).colorScheme.surface;
-
-  // --- Unified tile builder for header/body (fixes "Tile" text) ---
-  Widget _eventTile(CalendarEvent event, DateTimeRange tileRange) {
-    final s =
-        event.data is ScheduleInterval ? event.data as ScheduleInterval : null;
-    final bg = _bgFor(s?.type);
-    final title = (s?.title?.trim().isNotEmpty ?? false)
-        ? s!.title!.trim()
-        : (s != null ? scheduleTypeToString(s.type) : 'New interval');
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: Spacings.s, vertical: Spacings.xs),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(Radiuses.s),
-      ),
-      child: Text(
-        title,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: _fgFor(bg),
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
-  String _formatDT(BuildContext context, DateTime dt, {bool use24h = true}) {
-    final l = MaterialLocalizations.of(context);
-    final date = l.formatFullDate(dt.toLocal()); // display local
-    final time = l.formatTimeOfDay(
-      TimeOfDay.fromDateTime(dt.toLocal()),
-      alwaysUse24HourFormat: use24h,
-    ); // e.g., 14:30
-    return '$date, $time';
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Calendar'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.sync),
+            tooltip: 'Sync data',
+            onPressed: () async {
+              // Initial load for current week.
+              setState(() => _isLoading = true);
+              final now = DateTime.now();
+              final start = _startOfWeek(now);
+              await _loadForRange(
+                DateTimeRange(
+                  start: start,
+                  end: start.add(const Duration(days: 7)),
+                ),
+              );
+              setState(() => _isLoading = false);
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -233,7 +191,7 @@ class _SchedulerViewState extends State<SchedulerView> {
                 Positioned.fill(
                   child: AbsorbPointer(
                     child: Container(
-                      color: Theme.of(context).colorScheme.onSurface,
+                      color: Theme.of(context).colorScheme.surface,
                       child: const Center(child: CircularProgressIndicator()),
                     ),
                   ),
@@ -243,6 +201,62 @@ class _SchedulerViewState extends State<SchedulerView> {
         ),
       ),
     );
+  }
+
+  // --- Colors per category ---
+  Color _bgFor(ScheduleType? t) {
+    switch (t) {
+      case ScheduleType.cycling:
+        return Colors.green.shade600;
+      case ScheduleType.work:
+        return Colors.blue.shade600;
+      case ScheduleType.other:
+        return Colors.orange.shade600;
+      default:
+        return Theme.of(context).colorScheme.secondaryContainer;
+    }
+  }
+
+  Color _fgFor(Color bg) => bg.computeLuminance() > 0.5
+      ? Theme.of(context).colorScheme.onSurface
+      : Theme.of(context).colorScheme.surface;
+
+  // --- Unified tile builder for header/body (fixes "Tile" text) ---
+  Widget _eventTile(CalendarEvent event, DateTimeRange tileRange) {
+    final s =
+        event.data is ScheduleInterval ? event.data as ScheduleInterval : null;
+    final bg = _bgFor(s?.type);
+    final title = (s?.title?.trim().isNotEmpty ?? false)
+        ? s!.title!.trim()
+        : (s != null ? scheduleTypeToString(s.type) : 'New interval');
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+          horizontal: Spacings.s, vertical: Spacings.xs),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(Radiuses.s),
+      ),
+      child: Text(
+        title,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: _fgFor(bg),
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  String _formatDT(BuildContext context, DateTime dt, {bool use24h = true}) {
+    final l = MaterialLocalizations.of(context);
+    final date = l.formatFullDate(dt.toLocal()); // display local
+    final time = l.formatTimeOfDay(
+      TimeOfDay.fromDateTime(dt.toLocal()),
+      alwaysUse24HourFormat: use24h,
+    ); // e.g., 14:30
+    return '$date, $time';
   }
 
   // ===== Data load & mapping =================================================
